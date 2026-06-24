@@ -1,0 +1,12 @@
+{
+  "name": "flins-notes",
+  "version": "0.1.0",
+  "description": "Windows desktop reminder app with desktop pet",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "electron": "^35.0.0"
+  }
+}
