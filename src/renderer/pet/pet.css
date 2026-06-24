@@ -38,15 +38,14 @@ body {
 #speech-bubble {
   position: absolute;
   left: 50%;
-  bottom: calc(100% + 80px);
-  width: 300px;
+  bottom: calc(100% + 32px);
+  transform: translateX(-50%);
   padding: 12px 14px 14px;
   background: #1a1a2e;
   border: 1px solid #2a2a40;
   border-radius: 12px;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
   pointer-events: none;
-  will-change: transform;
   box-sizing: border-box;
 }
 

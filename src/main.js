@@ -8,11 +8,13 @@ const { startScheduler } = require('./scheduler/scheduler');
 const { readAudioAsDataUrl, resolveSoundPath } = require('./scheduler/audioHelper');
 const { getGreetingVoiceline, getRandomChatVoiceline, getVoicelinePayload } = require('./audio/voicelines');
 
-const PET_IMAGE = path.join(__dirname, '..', 'assets', 'flins', 'flins_bow.png');
+const PET_ASSETS_DIR = path.join(__dirname, '..', 'assets', 'flins');
+const PET_IDLE_IMAGE = path.join(PET_ASSETS_DIR, 'flins_idle.png');
+const PET_ICON_IMAGE = path.join(PET_ASSETS_DIR, 'flins_bow.png');
 const DEFAULT_ALARM = path.join(__dirname, 'audio', 'alarm', 'alarm_columbina_end.mp3');
-const PET_MAX_SIZE = 300;
-const PET_BUBBLE_GAP = 80;
-const PET_BUBBLE_MAX_HEIGHT = 240;
+const PET_MAX_SIZE = 240;
+const PET_BUBBLE_GAP = 32;
+const PET_BUBBLE_MAX_HEIGHT = 220;
 const PET_BUBBLE_AREA = PET_BUBBLE_GAP + PET_BUBBLE_MAX_HEIGHT;
 
 let mainWindow = null;
@@ -42,7 +44,7 @@ if (!gotSingleInstanceLock) {
     }
 
     const appPath = path.join(__dirname, '..');
-    dataStore = initDataStore(appPath, app.getPath('userData'), PET_IMAGE);
+    dataStore = initDataStore(appPath, app.getPath('userData'), PET_IDLE_IMAGE);
     registerDataIpc(dataStore, () => mainWindow);
 
     Menu.setApplicationMenu(null);
@@ -58,7 +60,13 @@ if (!gotSingleInstanceLock) {
 }
 
 function getAppIcon() {
-  return nativeImage.createFromPath(PET_IMAGE);
+  return nativeImage.createFromPath(PET_ICON_IMAGE);
+}
+
+function resolvePetImageSrc(spriteFileName) {
+  const filePath = path.join(PET_ASSETS_DIR, spriteFileName);
+  const resolved = fs.existsSync(filePath) ? filePath : PET_IDLE_IMAGE;
+  return pathToFileURL(resolved).href;
 }
 
 function scalePetSize(imageWidth, imageHeight) {
@@ -181,6 +189,7 @@ function playVoicelineFile(filePath, text) {
     dataUrl,
     volume,
     text: text || payload.text,
+    imageSrc: resolvePetImageSrc(payload.sprite),
   });
 }
 
@@ -348,7 +357,7 @@ function startReminderScheduler() {
 }
 
 function createPetWindow() {
-  const image = nativeImage.createFromPath(PET_IMAGE);
+  const image = nativeImage.createFromPath(PET_IDLE_IMAGE);
   const { width: imageWidth, height: imageHeight } = image.getSize();
   const size = scalePetSize(imageWidth, imageHeight);
   petWidth = size.width;
@@ -436,7 +445,7 @@ ipcMain.handle('window:close', () => {
   hideMainWindow();
 });
 
-ipcMain.handle('pet:getImageSrc', () => pathToFileURL(PET_IMAGE).href);
+ipcMain.handle('pet:getImageSrc', () => pathToFileURL(PET_IDLE_IMAGE).href);
 
 ipcMain.handle('pet:getDimensions', () => ({
   width: petWidth,
