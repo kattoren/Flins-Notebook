@@ -73,12 +73,13 @@ function setupAudioListeners() {
 
 async function init() {
   setupAudioListeners();
-  window.petApi.notifyReady();
 
   const dims = await window.petApi.getDimensions();
   idleSrc = await window.petApi.getImageSrc();
   applyFixedSize(dims.width, dims.height, dims.windowHeight);
   setPetSprite(idleSrc);
+
+  window.petApi.notifyReady();
 }
 
 img.addEventListener('mousedown', (e) => {

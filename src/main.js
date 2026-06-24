@@ -95,6 +95,22 @@ function lockPetWindowSize(win, width, height) {
   win.setContentSize(width, height);
 }
 
+function configurePetWindow(win) {
+  win.setTitle('');
+
+  if (process.platform !== 'win32') return;
+
+  const nudgeWindowSize = () => {
+    if (win.isDestroyed()) return;
+    const [width, height] = win.getContentSize();
+    win.setContentSize(width, height + 1);
+    win.setContentSize(width, height);
+  };
+
+  win.on('blur', nudgeWindowSize);
+  win.on('focus', nudgeWindowSize);
+}
+
 function setPetAlwaysOnTop(enabled) {
   petAlwaysOnTop = enabled;
   if (!petWindow) return;
@@ -210,7 +226,6 @@ function summonPet() {
   lockPetWindowSize(petWindow, petWidth, getPetWindowHeight());
   petWindow.setPosition(x, y);
   petWindow.show();
-  petWindow.focus();
   notifyPetVisibility(true);
   playGreetingVoiceline();
 }
@@ -370,9 +385,14 @@ function createPetWindow() {
     height: winH,
     x,
     y,
+    title: '',
     useContentSize: true,
     transparent: true,
     frame: false,
+    thickFrame: false,
+    titleBarStyle: 'hidden',
+    roundedCorners: false,
+    focusable: false,
     skipTaskbar: true,
     resizable: false,
     hasShadow: false,
@@ -385,6 +405,8 @@ function createPetWindow() {
       zoomFactor: 1,
     },
   });
+
+  configurePetWindow(petWindow);
 
   lockPetWindowSize(petWindow, petWidth, winH);
   petWindow.webContents.setVisualZoomLevelLimits(1, 1);
