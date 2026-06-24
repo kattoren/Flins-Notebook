@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'">
+  <title></title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app">
+    <header class="titlebar">
+      <div class="titlebar-drag"></div>
+      <div class="titlebar-buttons">
+        <button id="minimize" type="button" aria-label="Minimize">&#8212;</button>
+        <button id="close" type="button" aria-label="Close">&#10005;</button>
+      </div>
+    </header>
+
+    <div class="shell">
+      <nav class="sidebar">
+        <button class="nav-btn active" data-view="home" type="button">Home</button>
+        <button class="nav-btn" data-view="reminders" type="button">Reminders</button>
+        <button class="nav-btn" data-view="achievements" type="button">My Achievements</button>
+        <div class="sidebar-footer">
+          <button id="summon" class="btn btn-secondary" type="button" style="width:100%">Summon</button>
+          <button id="close-book" class="btn btn-secondary" type="button" style="width:100%;margin-top:8px">Close Book</button>
+        </div>
+      </nav>
+
+      <div class="main-panel">
+        <section id="view-home" class="view active">
+          <div class="view-header">
+            <h2>Home</h2>
+          </div>
+
+          <div class="home-grid">
+            <div class="home-card level-card">
+              <div class="level-badge">
+                <span class="level-label">Level</span>
+                <span id="home-level" class="level-number">0</span>
+              </div>
+              <div class="level-details">
+                <p class="stat-line"><span id="home-total">0</span> achievements completed</p>
+                <div class="progress-bar">
+                  <div id="home-progress-fill" class="progress-fill"></div>
+                </div>
+                <p id="home-progress-label" class="progress-label">Log tasks to level up</p>
+              </div>
+            </div>
+
+            <div class="home-card">
+              <h3>Upcoming today</h3>
+              <div id="home-upcoming"></div>
+            </div>
+
+            <div class="home-card">
+              <h3>Recent achievements</h3>
+              <div id="home-recent"></div>
+            </div>
+          </div>
+        </section>
+
+        <section id="view-reminders" class="view">
+          <div class="view-header">
+            <h2>Reminders</h2>
+            <div class="view-toggle">
+              <button id="reminders-day-view" class="active" type="button">Today</button>
+              <button id="reminders-week-view" type="button">Week</button>
+            </div>
+          </div>
+          <div class="reminders-layout">
+            <div id="reminders-list-panel"></div>
+            <div id="reminder-form" class="reminder-form">
+              <h3 id="form-title">New reminder</h3>
+              <div class="form-field">
+                <label for="reminder-title">Title</label>
+                <input id="reminder-title" type="text" required placeholder="What to remember">
+              </div>
+              <div class="form-field">
+                <label for="reminder-time">Time</label>
+                <input id="reminder-time" type="time" required>
+              </div>
+              <div class="form-field">
+                <label for="reminder-repeat">Repeat</label>
+                <select id="reminder-repeat">
+                  <option value="once">Once</option>
+                  <option value="daily">Daily</option>
+                  <option value="weekdays">Weekdays</option>
+                  <option value="weekends">Weekends</option>
+                  <option value="weekly">Weekly</option>
+                  <option value="custom">Custom days</option>
+                </select>
+              </div>
+              <div id="reminder-date-field" class="form-field">
+                <label for="reminder-date">Date</label>
+                <input id="reminder-date" type="date">
+              </div>
+              <div id="reminder-days-field" class="form-field hidden">
+                <label>Days</label>
+                <div id="reminder-days" class="day-picker"></div>
+              </div>
+              <div class="form-field">
+                <label>Sound</label>
+                <div class="sound-row">
+                  <span id="reminder-sound-label">Columbina alarm (default)</span>
+                  <button id="reminder-use-default" class="btn btn-secondary btn-sm" type="button">Default</button>
+                  <button id="reminder-pick-sound" class="btn btn-secondary btn-sm" type="button">Browse</button>
+                </div>
+              </div>
+              <div class="form-field">
+                <label for="reminder-play-count">Times to play</label>
+                <input id="reminder-play-count" type="number" min="1" max="10" value="1">
+              </div>
+              <div class="form-row-toggle">
+                <input id="reminder-enabled" type="checkbox" checked>
+                <label for="reminder-enabled">Enabled</label>
+              </div>
+              <div class="form-actions">
+                <button id="reminder-save" class="btn" type="button">Save</button>
+                <button id="reminder-cancel" class="btn btn-secondary hidden" type="button">Cancel</button>
+                <button id="reminder-delete" class="btn btn-danger hidden" type="button">Delete</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="view-achievements" class="view">
+          <div class="view-header">
+            <h2>My Achievements</h2>
+          </div>
+
+          <div class="achievements-layout">
+            <div class="achievements-main">
+              <div id="achievement-form" class="achievement-form">
+                <label for="achievement-name">Log a completed task</label>
+                <div class="achievement-input-row">
+                  <input id="achievement-name" type="text" placeholder="What did you finish?">
+                  <button id="achievement-log" class="btn" type="button">Log</button>
+                </div>
+              </div>
+
+              <div id="achievements-list"></div>
+            </div>
+
+            <aside class="achievements-sidebar">
+              <div class="stat-card">
+                <span class="stat-label">Total</span>
+                <span id="achievements-total" class="stat-value">0</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-label">Level</span>
+                <span id="achievements-level" class="stat-value">0</span>
+              </div>
+              <div class="progress-bar tall">
+                <div id="achievements-progress-fill" class="progress-fill"></div>
+              </div>
+              <p id="achievements-progress-label" class="progress-label">Log tasks to level up</p>
+            </aside>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+  <script src="shared.js" defer></script>
+  <script src="../home/home.js" defer></script>
+  <script src="../reminders/reminders.js" defer></script>
+  <script src="../achievements/achievements.js" defer></script>
+  <script src="app.js" defer></script>
+</body>
+</html>
