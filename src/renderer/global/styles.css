@@ -108,7 +108,37 @@ select {
 
 .sidebar-footer {
   margin-top: auto;
-  padding: 12px 16px;
+  padding: 12px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sidebar-action {
+  width: 100%;
+}
+
+#close-book {
+  margin-top: 8px;
+}
+
+.volume-control {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.volume-control label {
+  font-size: 12px;
+  color: #aaa;
+}
+
+.volume-control input[type='range'] {
+  width: 100%;
+  margin: 0;
+  accent-color: #4a6fa5;
+  cursor: pointer;
 }
 
 .main-panel {

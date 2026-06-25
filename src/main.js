@@ -193,13 +193,17 @@ function sendToPetWindow(channel, payload) {
   sendToWindow(petWindow, channel, payload);
 }
 
+function broadcastVoicelineVolume(volume) {
+  sendToPetWindow('voiceline-volume', volume);
+}
+
 function playVoicelineFile(filePath, text) {
   if (!filePath || !fs.existsSync(filePath)) return;
 
   const payload = getVoicelinePayload(filePath);
   const settings = dataStore.settings.get();
   const dataUrl = readAudioAsDataUrl(filePath);
-  const volume = settings.volume ?? 1;
+  const volume = settings.voicelineVolume ?? 0.25;
 
   sendToPetWindow('play-voiceline', {
     dataUrl,
@@ -510,6 +514,13 @@ ipcMain.handle('pet:playChatVoiceline', () => {
   if (chat) {
     playVoicelineFile(chat.filePath, chat.text);
   }
+});
+
+ipcMain.handle('voiceline:setVolume', (_event, volume) => {
+  const clamped = Math.min(1, Math.max(0, Number(volume) || 0));
+  dataStore.settings.update({ voicelineVolume: clamped });
+  broadcastVoicelineVolume(clamped);
+  return clamped;
 });
 
 ipcMain.handle('app:quit', () => {

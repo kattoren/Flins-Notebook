@@ -23,8 +23,12 @@
         <button class="nav-btn" data-view="reminders" type="button">Reminders</button>
         <button class="nav-btn" data-view="achievements" type="button">My Achievements</button>
         <div class="sidebar-footer">
-          <button id="summon" class="btn btn-secondary" type="button" style="width:100%">Summon</button>
-          <button id="close-book" class="btn btn-secondary" type="button" style="width:100%;margin-top:8px">Close Book</button>
+          <div class="volume-control">
+            <label for="voiceline-volume">Flins volume</label>
+            <input id="voiceline-volume" type="range" min="0" max="100" value="25" aria-label="Flins voiceline volume">
+          </div>
+          <button id="summon" class="btn btn-secondary sidebar-action" type="button">Summon</button>
+          <button id="close-book" class="btn btn-secondary sidebar-action" type="button">Close Book</button>
         </div>
       </nav>
 

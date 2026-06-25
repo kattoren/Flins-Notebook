@@ -1,6 +1,11 @@
 window.PetAudioPlayer = (function createPetAudioPlayer() {
   let currentAudio = null;
   let busy = false;
+  let activeVolume = 1;
+
+  function clampVolume(value) {
+    return Math.min(1, Math.max(0, value ?? 1));
+  }
 
   function setIdle() {
     currentAudio = null;
@@ -19,6 +24,13 @@ window.PetAudioPlayer = (function createPetAudioPlayer() {
     return busy;
   }
 
+  function setVolume(volume) {
+    activeVolume = clampVolume(volume);
+    if (currentAudio) {
+      currentAudio.volume = activeVolume;
+    }
+  }
+
   function playDataUrl(dataUrl, volume, options = {}) {
     const { interrupt = true, onEnded } = options;
     if (busy && !interrupt) {
@@ -27,10 +39,11 @@ window.PetAudioPlayer = (function createPetAudioPlayer() {
 
     stop();
     busy = true;
+    activeVolume = clampVolume(volume);
 
     return new Promise((resolve) => {
       const audio = new Audio(dataUrl);
-      audio.volume = Math.min(1, Math.max(0, volume ?? 1));
+      audio.volume = activeVolume;
       currentAudio = audio;
 
       const finish = (ok) => {
@@ -52,6 +65,7 @@ window.PetAudioPlayer = (function createPetAudioPlayer() {
   function playSequence(dataUrl, volume, playCount) {
     stop();
     busy = true;
+    activeVolume = clampVolume(volume);
 
     let remaining = Math.max(1, playCount || 1);
 
@@ -63,7 +77,7 @@ window.PetAudioPlayer = (function createPetAudioPlayer() {
       remaining -= 1;
 
       const audio = new Audio(dataUrl);
-      audio.volume = Math.min(1, Math.max(0, volume ?? 1));
+      audio.volume = activeVolume;
       currentAudio = audio;
 
       audio.addEventListener('ended', () => {
@@ -84,6 +98,7 @@ window.PetAudioPlayer = (function createPetAudioPlayer() {
   return {
     stop,
     isBusy,
+    setVolume,
     playDataUrl,
     playSequence,
   };

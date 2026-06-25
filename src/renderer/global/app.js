@@ -23,6 +23,24 @@ function initNavigation() {
   });
 }
 
+function initVolumeControl() {
+  const slider = document.getElementById('voiceline-volume');
+
+  window.api.settingsGet()
+    .then((settings) => {
+      const volume = settings.voicelineVolume ?? 0.25;
+      slider.value = String(Math.round(volume * 100));
+    })
+    .catch(() => {
+      slider.value = '25';
+    });
+
+  slider.addEventListener('input', () => {
+    const value = Number(slider.value) / 100;
+    window.api.setVoicelineVolume(value);
+  });
+}
+
 function initWindowControls() {
   const summonBtn = document.getElementById('summon');
 
@@ -77,6 +95,7 @@ function bootstrap() {
   }
 
   initWindowControls();
+  initVolumeControl();
   initNavigation();
 
   runInit('home', () => window.initHome?.());

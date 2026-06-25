@@ -21,5 +21,6 @@ contextBridge.exposeInMainWorld('api', {
   achievementsDelete: (id) => ipcRenderer.invoke('achievements:delete', id),
   settingsGet: () => ipcRenderer.invoke('settings:get'),
   settingsUpdate: (input) => ipcRenderer.invoke('settings:update', input),
+  setVoicelineVolume: (volume) => ipcRenderer.invoke('voiceline:setVolume', volume),
   getDefaultAlarmLabel: () => ipcRenderer.invoke('audio:getDefaultAlarmLabel'),
 });

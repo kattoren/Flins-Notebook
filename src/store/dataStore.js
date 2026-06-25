@@ -27,6 +27,7 @@ function createDefaultData(petImagePath) {
       petVoicelines: [],
       autoLaunch: false,
       volume: 1,
+      voicelineVolume: 0.25,
     },
   };
 }

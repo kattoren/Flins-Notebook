@@ -60,6 +60,10 @@ function setupAudioListeners() {
     player.playDataUrl(dataUrl, volume, { interrupt: true, onEnded: resetToIdle });
   });
 
+  window.petApi.onVoicelineVolumeChange((volume) => {
+    player.setVolume(volume);
+  });
+
   window.petApi.onPlayAudio(({ dataUrl, volume, playCount }) => {
     resetToIdle();
     player.playSequence(dataUrl, volume, playCount);

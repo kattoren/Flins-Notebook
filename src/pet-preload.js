@@ -19,5 +19,8 @@ contextBridge.exposeInMainWorld('petApi', {
   onReact: (callback) => {
     ipcRenderer.on('pet:react', () => callback());
   },
+  onVoicelineVolumeChange: (callback) => {
+    ipcRenderer.on('voiceline-volume', (_event, volume) => callback(volume));
+  },
   notifyReady: () => ipcRenderer.invoke('pet:ready'),
 });
