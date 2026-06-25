@@ -23,4 +23,11 @@ contextBridge.exposeInMainWorld('api', {
   settingsUpdate: (input) => ipcRenderer.invoke('settings:update', input),
   setVoicelineVolume: (volume) => ipcRenderer.invoke('voiceline:setVolume', volume),
   getDefaultAlarmLabel: () => ipcRenderer.invoke('audio:getDefaultAlarmLabel'),
+  getUiAssetUrl: (relativePath) => ipcRenderer.invoke('ui:getAssetUrl', relativePath),
+  getSfxUrl: (filename) => ipcRenderer.invoke('audio:getSfxUrl', filename),
+  setBookOpen: (open) => ipcRenderer.invoke('book:setOpen', open),
+  getBookOpen: () => ipcRenderer.invoke('book:getOpen'),
+  onBookOpen: (callback) => {
+    ipcRenderer.on('book:open', () => callback());
+  },
 });

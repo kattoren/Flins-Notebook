@@ -28,6 +28,7 @@ function createDefaultData(petImagePath) {
       autoLaunch: false,
       volume: 1,
       voicelineVolume: 0.25,
+      bookOpen: false,
     },
   };
 }

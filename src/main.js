@@ -17,6 +17,8 @@ const PET_BUBBLE_GAP = 32;
 const PET_BUBBLE_MAX_HEIGHT = 220;
 const PET_BUBBLE_AREA = PET_BUBBLE_GAP + PET_BUBBLE_MAX_HEIGHT;
 
+const { getBookWindowSize } = require('./bookLayout');
+
 let mainWindow = null;
 let petWindow = null;
 let tray = null;
@@ -44,6 +46,7 @@ if (!gotSingleInstanceLock) {
     }
 
     const appPath = path.join(__dirname, '..');
+    appRootPath = appPath;
     dataStore = initDataStore(appPath, app.getPath('userData'), PET_IDLE_IMAGE);
     registerDataIpc(dataStore, () => mainWindow);
 
@@ -137,7 +140,12 @@ function showPetContextMenu() {
     },
     { type: 'separator' },
     {
-      label: 'Close Notes',
+      label: 'Open Book',
+      click: () => openBookWindow(),
+    },
+    { type: 'separator' },
+    {
+      label: 'Close Book',
       click: () => quitApp(),
     },
   ]);
@@ -253,6 +261,17 @@ function showMainWindow() {
   mainWindow.focus();
 }
 
+function openBookWindow() {
+  dataStore.settings.update({ bookOpen: true });
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    createMainWindow();
+  } else {
+    resizeMainWindowForBook(true);
+    showMainWindow();
+    mainWindow.webContents.send('book:open');
+  }
+}
+
 function createTray() {
   const icon = getAppIcon();
   tray = new Tray(icon.resize({ width: 16, height: 16 }));
@@ -266,16 +285,33 @@ function createTray() {
   tray.on('click', () => showMainWindow());
 }
 
+function getBookWindowSizeForState(open) {
+  return getBookWindowSize(open);
+}
+
+function resizeMainWindowForBook(open) {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  const { width, height } = getBookWindowSizeForState(open);
+  mainWindow.setContentSize(width, height);
+  mainWindow.center();
+}
+
 function createMainWindow() {
   const icon = getAppIcon();
+  const bookOpen = dataStore?.settings?.get()?.bookOpen ?? false;
+  const { width, height } = getBookWindowSizeForState(bookOpen);
 
   mainWindow = new BrowserWindow({
-    width: 900,
-    height: 620,
+    width,
+    height,
     center: true,
     maximizable: false,
+    resizable: false,
     frame: false,
     skipTaskbar: false,
+    transparent: true,
+    hasShadow: true,
+    backgroundColor: '#00000000',
     icon,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -521,6 +557,27 @@ ipcMain.handle('voiceline:setVolume', (_event, volume) => {
   dataStore.settings.update({ voicelineVolume: clamped });
   broadcastVoicelineVolume(clamped);
   return clamped;
+});
+
+ipcMain.handle('audio:getSfxUrl', (_event, filename) => {
+  const safeName = path.basename(filename);
+  const fullPath = path.join(appRootPath, 'src', 'audio', 'sound effects', safeName);
+  return pathToFileURL(fullPath).href;
+});
+
+ipcMain.handle('ui:getAssetUrl', (_event, relativePath) => {
+  const safePath = path.normalize(relativePath).replace(/^(\.\.(\/|\\|$))+/, '');
+  const fullPath = path.join(appRootPath, 'assets', 'ui', safePath);
+  return pathToFileURL(fullPath).href;
+});
+
+ipcMain.handle('book:getOpen', () => dataStore.settings.get().bookOpen ?? false);
+
+ipcMain.handle('book:setOpen', (_event, open) => {
+  const isOpen = Boolean(open);
+  dataStore.settings.update({ bookOpen: isOpen });
+  resizeMainWindowForBook(isOpen);
+  return isOpen;
 });
 
 ipcMain.handle('app:quit', () => {

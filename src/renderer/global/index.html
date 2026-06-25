@@ -3,69 +3,66 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' file: data:; media-src 'self' file: data: blob:">
   <title></title>
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="book.css">
 </head>
 <body>
-  <div class="app">
-    <header class="titlebar">
-      <div class="titlebar-drag"></div>
-      <div class="titlebar-buttons">
-        <button id="minimize" type="button" aria-label="Minimize">&#8212;</button>
-        <button id="close" type="button" aria-label="Close">&#10005;</button>
-      </div>
-    </header>
+  <div id="book-closed" class="book-shell hidden">
+    <div class="book-stage-scaled book-stage-closed">
+      <img id="img-book-close" class="book-img-closed" alt="" width="723" height="970">
+      <div class="book-drag-strip book-drag-strip-closed" aria-hidden="true"></div>
+      <button id="book-cover-open" type="button" aria-label="Open book"></button>
+    </div>
+  </div>
 
-    <div class="shell">
-      <nav class="sidebar">
-        <button class="nav-btn active" data-view="home" type="button">Home</button>
-        <button class="nav-btn" data-view="reminders" type="button">Reminders</button>
-        <button class="nav-btn" data-view="achievements" type="button">My Achievements</button>
-        <div class="sidebar-footer">
-          <div class="volume-control">
-            <label for="voiceline-volume">Flins volume</label>
-            <input id="voiceline-volume" type="range" min="0" max="100" value="25" aria-label="Flins voiceline volume">
-          </div>
-          <button id="summon" class="btn btn-secondary sidebar-action" type="button">Summon</button>
-          <button id="close-book" class="btn btn-secondary sidebar-action" type="button">Close Book</button>
+  <div id="book-open" class="book-shell hidden">
+    <div class="book-stage-scaled">
+      <div class="book-stage">
+        <img id="img-book-bg" class="book-stage-bg" alt="" width="1445" height="970">
+        <div class="book-drag-strip" aria-hidden="true"></div>
+
+        <div class="book-marks-visual" aria-hidden="true">
+          <img class="mark-bg-img" data-mark-for="home" alt="">
+          <img class="mark-bg-img" data-mark-for="reminders" alt="">
+          <img class="mark-bg-img" data-mark-for="achievements" alt="">
+          <img class="mark-bg-img" data-mark-for="volume" alt="">
+          <img class="mark-bg-img" data-mark-for="summon" alt="">
+          <img class="mark-bg-img" data-mark-for="exit" alt="">
         </div>
-      </nav>
 
-      <div class="main-panel">
-        <section id="view-home" class="view active">
-          <div class="view-header">
-            <h2>Home</h2>
+        <div class="book-content">
+        <section id="view-home" class="book-page view active">
+          <div class="home-reminders-panel">
+            <div class="home-panel-header">
+              <h3>Today's Reminders</h3>
+            </div>
+            <div id="home-upcoming" class="home-reminders-list"></div>
           </div>
 
-          <div class="home-grid">
-            <div class="home-card level-card">
-              <div class="level-badge">
-                <span class="level-label">Level</span>
-                <span id="home-level" class="level-number">0</span>
-              </div>
-              <div class="level-details">
-                <p class="stat-line"><span id="home-total">0</span> achievements completed</p>
-                <div class="progress-bar">
-                  <div id="home-progress-fill" class="progress-fill"></div>
-                </div>
-                <p id="home-progress-label" class="progress-label">Log tasks to level up</p>
-              </div>
+          <div class="home-level-block">
+            <div class="home-level-label">LEVEL</div>
+            <div class="home-level-ring">
+              <span id="home-level">0</span>
             </div>
+            <div id="home-progress-fraction">0 / 1</div>
+            <div class="home-total-banner">Total Count: <span id="home-total">0</span></div>
+            <div class="home-progress-track">
+              <div id="home-progress-fill"></div>
+            </div>
+            <p id="home-progress-label" class="hidden" aria-hidden="true"></p>
+          </div>
 
-            <div class="home-card">
-              <h3>Upcoming today</h3>
-              <div id="home-upcoming"></div>
+          <div class="home-recent-panel">
+            <div class="home-panel-header">
+              <h3>Recent Achievements</h3>
             </div>
-
-            <div class="home-card">
-              <h3>Recent achievements</h3>
-              <div id="home-recent"></div>
-            </div>
+            <div id="home-recent" class="home-recent-list"></div>
           </div>
         </section>
 
-        <section id="view-reminders" class="view">
+        <section id="view-reminders" class="book-page view legacy-page">
           <div class="view-header">
             <h2>Reminders</h2>
             <div class="view-toggle">
@@ -129,11 +126,10 @@
           </div>
         </section>
 
-        <section id="view-achievements" class="view">
+        <section id="view-achievements" class="book-page view legacy-page">
           <div class="view-header">
             <h2>My Achievements</h2>
           </div>
-
           <div class="achievements-layout">
             <div class="achievements-main">
               <div id="achievement-form" class="achievement-form">
@@ -143,10 +139,8 @@
                   <button id="achievement-log" class="btn" type="button">Log</button>
                 </div>
               </div>
-
               <div id="achievements-list"></div>
             </div>
-
             <aside class="achievements-sidebar">
               <div class="stat-card">
                 <span class="stat-label">Total</span>
@@ -164,8 +158,59 @@
           </div>
         </section>
       </div>
+
+        <img id="img-book-top" class="book-stage-top" alt="" width="1211" height="808">
+
+        <button id="close-book-fold" class="close-book-fold" type="button" aria-label="Close book"></button>
+
+        <nav class="book-marks" aria-label="Book navigation">
+          <button id="mark-home" class="book-mark" data-view="home" data-mark-for="home" type="button" aria-label="Home">
+            <img class="book-mark-icon" data-icon="Icons/icon_home.svg" alt="">
+          </button>
+          <button id="mark-reminders" class="book-mark" data-view="reminders" data-mark-for="reminders" type="button" aria-label="Reminders">
+            <img class="book-mark-icon" data-icon="Icons/icon_reminders.svg" alt="">
+          </button>
+          <button id="mark-achievements" class="book-mark" data-view="achievements" data-mark-for="achievements" type="button" aria-label="Achievements">
+            <img class="book-mark-icon" data-icon="Icons/icon_achievements.svg" alt="">
+          </button>
+
+          <div class="volume-mark-wrap" id="volume-mark-wrap">
+            <div class="volume-drawer" id="volume-drawer">
+              <input id="voiceline-volume" type="range" min="0" max="100" value="25" aria-label="Flins voiceline volume">
+            </div>
+            <button id="mark-volume" class="book-mark" data-mark-for="volume" type="button" aria-label="Volume">
+              <img class="book-mark-icon" data-icon="Icons/icon_volume_sound.svg" alt="">
+            </button>
+          </div>
+
+          <button id="mark-summon" class="book-mark" data-mark-for="summon" type="button" aria-label="Summon Flins">
+            <img class="book-mark-icon" data-icon="Icons/icon_summon.svg" alt="">
+          </button>
+
+          <button id="mark-exit" class="book-mark" data-mark-for="exit" type="button" aria-label="Quit app">
+            <img class="book-mark-icon" data-icon="Icons/icon_exit.svg" alt="">
+          </button>
+        </nav>
+
+        <div class="win-marks-visual" aria-hidden="true">
+          <img class="win-mark-bg-img" data-for="minimize" alt="">
+          <img class="win-mark-bg-img" data-for="close" alt="">
+        </div>
+
+        <div class="win-chrome">
+          <button id="win-minimize" class="win-tab-btn" type="button" aria-label="Minimize">
+            <img class="win-tab-icon" data-icon="Icons/icon_minimize.svg" alt="">
+          </button>
+          <button id="win-close" class="win-tab-btn" type="button" aria-label="Close to tray">
+            <img class="win-tab-icon" data-icon="Icons/icon_close.svg" alt="">
+          </button>
+        </div>
+      </div>
     </div>
   </div>
+
+  <script src="../../bookLayout.js"></script>
+  <script src="sfx.js"></script>
   <script src="shared.js" defer></script>
   <script src="../home/home.js" defer></script>
   <script src="../reminders/reminders.js" defer></script>

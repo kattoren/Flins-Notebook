@@ -10,7 +10,7 @@ body {
 
 body {
   font-family: system-ui, sans-serif;
-  background: #1a1a2e;
+  background: transparent;
   color: #eee;
   overflow: hidden;
 }
