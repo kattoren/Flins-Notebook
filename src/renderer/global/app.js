@@ -1,5 +1,6 @@
 const MARK_YES = 'Book/Mark_yes current.svg';
 const MARK_NO = 'Book/Mark_not current.svg';
+const MARK_VERTICAL = 'Book/Mark_vertical.svg';
 
 const ASSET_PATHS = {
   bookClose: 'Book/Book_close.png',
@@ -47,12 +48,13 @@ function applyMaskIcon(el, url) {
 }
 
 async function initBookAssets() {
-  const [bookClose, bookBg, bookTop, markYes, markNo] = await Promise.all([
+  const [bookClose, bookBg, bookTop, markYes, markNo, markVertical] = await Promise.all([
     loadUiAsset(ASSET_PATHS.bookClose),
     loadUiAsset(ASSET_PATHS.bookBg),
     loadUiAsset(ASSET_PATHS.bookTop),
     loadUiAsset(MARK_YES),
     loadUiAsset(MARK_NO),
+    loadUiAsset(MARK_VERTICAL),
   ]);
 
   document.getElementById('img-book-close').src = bookClose;
@@ -66,7 +68,7 @@ async function initBookAssets() {
   });
 
   document.querySelectorAll('.win-mark-bg-img').forEach((img) => {
-    img.src = markNo;
+    img.src = markVertical;
   });
 
   const bookIconLoads = [...document.querySelectorAll('.book-mark-icon[data-icon]')].map(async (el) => {

@@ -13,6 +13,7 @@ function normalizeReminder(reminder) {
     ...reminder,
     playCount: clampPlayCount(reminder.playCount ?? 1),
     days: Array.isArray(reminder.days) ? reminder.days : [],
+    skippedDates: Array.isArray(reminder.skippedDates) ? reminder.skippedDates : [],
   };
 }
 
@@ -23,6 +24,7 @@ function createDefaultData(petImagePath) {
     settings: {
       petEnabled: true,
       petAlwaysOnTop: true,
+      petRoamMode: true,
       petImage: petImagePath,
       petVoicelines: [],
       autoLaunch: false,
@@ -68,6 +70,7 @@ function createReminderStore(store, defaults) {
           soundPath: input.soundPath ?? '',
           playCount: clampPlayCount(input.playCount),
           enabled: input.enabled !== false,
+          skippedDates: [],
           lastFiredAt: null,
           createdAt: Date.now(),
         };

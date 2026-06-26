@@ -91,12 +91,38 @@ function getRemindersForDay(allReminders, date) {
     .sort((a, b) => a.time.localeCompare(b.time));
 }
 
+function isReminderSkippedOnDay(reminder, date) {
+  const skipped = reminder.skippedDates || [];
+  return skipped.includes(formatDate(date));
+}
+
+function isReminderActiveOnDay(reminder, date) {
+  if (!reminder.enabled) return false;
+  return !isReminderSkippedOnDay(reminder, date);
+}
+
+function countWeekOccurrences(reminder, referenceDate = new Date()) {
+  const start = new Date(referenceDate);
+  start.setHours(0, 0, 0, 0);
+  start.setDate(start.getDate() - start.getDay());
+
+  let count = 0;
+  for (let i = 0; i < 7; i += 1) {
+    const day = new Date(start);
+    day.setDate(start.getDate() + i);
+    if (reminderMatchesDay(reminder, day)) {
+      count += 1;
+    }
+  }
+  return count;
+}
+
 function getUpcomingToday(allReminders) {
   const now = new Date();
   const nowMinutes = now.getHours() * 60 + now.getMinutes();
 
   return getRemindersForDay(allReminders, now)
-    .filter((r) => r.enabled)
+    .filter((r) => isReminderActiveOnDay(r, now))
     .filter((r) => {
       const [h, m] = r.time.split(':').map(Number);
       return h * 60 + m >= nowMinutes;
@@ -113,6 +139,9 @@ window.AppShared = {
   formatDateTime,
   getLevelInfo,
   reminderMatchesDay,
+  isReminderSkippedOnDay,
+  isReminderActiveOnDay,
+  countWeekOccurrences,
   getRemindersForDay,
   getUpcomingToday,
 };

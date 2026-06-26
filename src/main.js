@@ -114,6 +114,31 @@ function configurePetWindow(win) {
   win.on('focus', nudgeWindowSize);
 }
 
+function getPetScreenBounds() {
+  const winH = getPetWindowHeight();
+  const point = petWindow && !petWindow.isDestroyed()
+    ? petWindow.getBounds()
+    : screen.getPrimaryDisplay().bounds;
+  const display = screen.getDisplayNearestPoint(point);
+  const { workArea } = display;
+  return {
+    minX: workArea.x,
+    maxX: workArea.x + workArea.width - petWidth,
+    floorY: workArea.y + workArea.height - winH,
+    ceilingY: workArea.y,
+  };
+}
+
+function isPetRoamModeEnabled() {
+  if (!dataStore) return true;
+  return dataStore.settings.get().petRoamMode !== false;
+}
+
+function setPetRoamMode(enabled) {
+  dataStore.settings.update({ petRoamMode: enabled });
+  sendToPetWindow('pet:roamMode', enabled);
+}
+
 function setPetAlwaysOnTop(enabled) {
   petAlwaysOnTop = enabled;
   if (!petWindow) return;
@@ -131,6 +156,12 @@ function showPetContextMenu() {
       click: () => {
         dismissPet();
       },
+    },
+    {
+      label: 'Roam mode',
+      type: 'checkbox',
+      checked: isPetRoamModeEnabled(),
+      click: (menuItem) => setPetRoamMode(menuItem.checked),
     },
     {
       label: 'Stay on top',
@@ -239,6 +270,7 @@ function summonPet() {
   petWindow.setPosition(x, y);
   petWindow.show();
   notifyPetVisibility(true);
+  sendToPetWindow('pet:resetPhysics');
   playGreetingVoiceline();
 }
 
@@ -506,6 +538,10 @@ ipcMain.handle('window:minimize', () => {
 ipcMain.handle('window:close', () => {
   hideMainWindow();
 });
+
+ipcMain.handle('pet:getScreenBounds', () => getPetScreenBounds());
+
+ipcMain.handle('pet:getRoamMode', () => isPetRoamModeEnabled());
 
 ipcMain.handle('pet:getImageSrc', () => pathToFileURL(PET_IDLE_IMAGE).href);
 

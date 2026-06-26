@@ -44,8 +44,14 @@ function firedInSameMinute(lastFiredAt, now) {
   );
 }
 
+function isSkippedOnDay(reminder, date) {
+  const skipped = Array.isArray(reminder.skippedDates) ? reminder.skippedDates : [];
+  return skipped.includes(formatDateLocal(date));
+}
+
 function shouldFireReminder(reminder, now) {
   if (!reminder.enabled) return false;
+  if (isSkippedOnDay(reminder, now)) return false;
   if (reminder.time !== formatTimeLocal(now)) return false;
   if (!reminderMatchesDay(reminder, now)) return false;
   if (firedInSameMinute(reminder.lastFiredAt, now)) return false;

@@ -62,99 +62,114 @@
           </div>
         </section>
 
-        <section id="view-reminders" class="book-page view legacy-page">
-          <div class="view-header">
-            <h2>Reminders</h2>
-            <div class="view-toggle">
-              <button id="reminders-day-view" class="active" type="button">Today</button>
-              <button id="reminders-week-view" type="button">Week</button>
-            </div>
-          </div>
-          <div class="reminders-layout">
-            <div id="reminders-list-panel"></div>
-            <div id="reminder-form" class="reminder-form">
-              <h3 id="form-title">New reminder</h3>
-              <div class="form-field">
-                <label for="reminder-title">Title</label>
-                <input id="reminder-title" type="text" required placeholder="What to remember">
-              </div>
-              <div class="form-field">
-                <label for="reminder-time">Time</label>
-                <input id="reminder-time" type="time" required>
-              </div>
-              <div class="form-field">
-                <label for="reminder-repeat">Repeat</label>
-                <select id="reminder-repeat">
-                  <option value="once">Once</option>
-                  <option value="daily">Daily</option>
-                  <option value="weekdays">Weekdays</option>
-                  <option value="weekends">Weekends</option>
-                  <option value="weekly">Weekly</option>
-                  <option value="custom">Custom days</option>
-                </select>
-              </div>
-              <div id="reminder-date-field" class="form-field">
-                <label for="reminder-date">Date</label>
-                <input id="reminder-date" type="date">
-              </div>
-              <div id="reminder-days-field" class="form-field hidden">
-                <label>Days</label>
-                <div id="reminder-days" class="day-picker"></div>
-              </div>
-              <div class="form-field">
-                <label>Sound</label>
-                <div class="sound-row">
-                  <span id="reminder-sound-label">Columbina alarm (default)</span>
-                  <button id="reminder-use-default" class="btn btn-secondary btn-sm" type="button">Default</button>
-                  <button id="reminder-pick-sound" class="btn btn-secondary btn-sm" type="button">Browse</button>
+        <section id="view-reminders" class="book-page view">
+          <div class="reminders-book-layout" id="reminders-book-layout">
+            <div class="book-panel reminders-list-panel" id="reminders-list-panel-wrap">
+              <div class="home-panel-header reminders-panel-header">
+                <h3 id="reminders-list-heading">Today's Reminders</h3>
+                <div class="reminders-header-actions">
+                  <div class="book-view-toggle">
+                    <button id="reminders-day-view" class="active" type="button">Today</button>
+                    <button id="reminders-week-view" type="button">Week</button>
+                  </div>
+                  <button id="reminders-bulk-edit" class="reminders-icon-btn" type="button" aria-label="Select reminders">
+                    <img data-icon="Icons/icon_edit.svg" alt="">
+                  </button>
+                  <button id="reminders-bulk-delete" class="reminders-icon-btn hidden" type="button" aria-label="Delete selected">
+                    <img data-icon="Icons/icon_delete.svg" alt="">
+                  </button>
                 </div>
               </div>
-              <div class="form-field">
-                <label for="reminder-play-count">Times to play</label>
-                <input id="reminder-play-count" type="number" min="1" max="10" value="1">
+              <div id="reminders-list-panel" class="book-panel-body reminders-list-body"></div>
+            </div>
+
+            <div class="book-panel reminder-form-panel hidden" id="reminder-form-panel">
+              <div class="home-panel-header">
+                <h3 id="form-title">New reminder</h3>
+                <button id="reminder-form-close" class="reminder-form-close" type="button" aria-label="Close form">×</button>
               </div>
-              <div class="form-row-toggle">
-                <input id="reminder-enabled" type="checkbox" checked>
-                <label for="reminder-enabled">Enabled</label>
-              </div>
-              <div class="form-actions">
-                <button id="reminder-save" class="btn" type="button">Save</button>
-                <button id="reminder-cancel" class="btn btn-secondary hidden" type="button">Cancel</button>
-                <button id="reminder-delete" class="btn btn-danger hidden" type="button">Delete</button>
+              <div id="reminder-form" class="book-form-body reminder-form">
+                <div class="form-field">
+                  <label for="reminder-title">Title</label>
+                  <input id="reminder-title" type="text" required placeholder="What to remember">
+                </div>
+                <div class="form-field">
+                  <label for="reminder-time">Time</label>
+                  <input id="reminder-time" type="time" required>
+                </div>
+                <div class="form-field">
+                  <label for="reminder-repeat">Repeat</label>
+                  <select id="reminder-repeat">
+                    <option value="once">Once</option>
+                    <option value="daily">Daily</option>
+                    <option value="weekdays">Weekdays</option>
+                    <option value="weekends">Weekends</option>
+                    <option value="weekly">Weekly</option>
+                    <option value="custom">Custom days</option>
+                  </select>
+                </div>
+                <div id="reminder-date-field" class="form-field">
+                  <label for="reminder-date">Date</label>
+                  <input id="reminder-date" type="date">
+                </div>
+                <div id="reminder-days-field" class="form-field hidden">
+                  <label>Days</label>
+                  <div id="reminder-days" class="day-picker"></div>
+                </div>
+                <div class="form-field">
+                  <label>Sound</label>
+                  <button id="reminder-pick-sound" class="reminders-sound-btn" type="button" aria-label="Choose alarm sound">
+                    <img data-icon="Icons/icon_volume_sound.svg" alt="">
+                  </button>
+                </div>
+                <div class="form-field">
+                  <label for="reminder-play-count">Times to play</label>
+                  <input id="reminder-play-count" type="number" min="1" max="10" value="1">
+                </div>
+                <div class="form-actions">
+                  <button id="reminder-save" class="btn" type="button">Save</button>
+                  <button id="reminder-cancel" class="btn btn-secondary hidden" type="button">Cancel</button>
+                  <button id="reminder-delete" class="btn btn-danger hidden" type="button">Delete</button>
+                </div>
               </div>
             </div>
+
+            <button id="reminder-add-fab" class="reminder-add-fab" type="button" aria-label="Add reminder">
+              <img data-icon="Icons/icon_add.svg" alt="">
+            </button>
           </div>
         </section>
 
-        <section id="view-achievements" class="book-page view legacy-page">
-          <div class="view-header">
-            <h2>My Achievements</h2>
-          </div>
-          <div class="achievements-layout">
-            <div class="achievements-main">
-              <div id="achievement-form" class="achievement-form">
+        <section id="view-achievements" class="book-page view">
+          <div class="achievements-book-layout">
+            <div class="book-panel achievements-list-panel">
+              <div class="home-panel-header">
+                <h3>My Achievements</h3>
+              </div>
+              <div id="achievement-form" class="book-form-inline achievement-form">
                 <label for="achievement-name">Log a completed task</label>
                 <div class="achievement-input-row">
                   <input id="achievement-name" type="text" placeholder="What did you finish?">
-                  <button id="achievement-log" class="btn" type="button">Log</button>
+                  <button id="achievement-log" class="achievement-add-btn" type="button" aria-label="Log achievement">
+                    <img data-icon="Icons/icon_add.svg" alt="">
+                  </button>
                 </div>
               </div>
-              <div id="achievements-list"></div>
+              <div id="achievements-list" class="book-panel-body"></div>
             </div>
-            <aside class="achievements-sidebar">
-              <div class="stat-card">
-                <span class="stat-label">Total</span>
-                <span id="achievements-total" class="stat-value">0</span>
+
+            <div class="home-level-block achievements-level-block">
+              <div class="home-level-label">LEVEL</div>
+              <div class="home-level-ring">
+                <span id="achievements-level">0</span>
               </div>
-              <div class="stat-card">
-                <span class="stat-label">Level</span>
-                <span id="achievements-level" class="stat-value">0</span>
+              <div id="achievements-progress-fraction" class="achievements-progress-fraction">0 / 1</div>
+              <div class="home-total-banner">Total Count: <span id="achievements-total">0</span></div>
+              <div class="home-progress-track">
+                <div id="achievements-progress-fill"></div>
               </div>
-              <div class="progress-bar tall">
-                <div id="achievements-progress-fill" class="progress-fill"></div>
-              </div>
-              <p id="achievements-progress-label" class="progress-label">Log tasks to level up</p>
-            </aside>
+              <p id="achievements-progress-label" class="achievements-progress-label">Log tasks to level up</p>
+            </div>
           </div>
         </section>
       </div>

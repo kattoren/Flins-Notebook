@@ -9,9 +9,35 @@
   --mark-h: 96px;
   --mark-gap: 12px;
   --mark-start: 145px;
-  --mark-icon: 43.5px;
+  --mark-inset: 0px;
+  --mark-icon: 36.975px;
+  --mark-icon-left: 51px;
+  --mark-vertical-w: 53.25px;
+  --mark-vertical-h: 79px;
+  --mark-vertical-crop: 50px;
+  --win-tab-icon: 30.75px;
   --mark-icon-active: #3e4059;
   --mark-icon-inactive: #a4a099;
+  --book-page-left: 138px;
+  --book-page-top: 116px;
+  --book-page-width: 1200px;
+  --book-page-height: 800px;
+  --book-page-margin: 36px;
+  --book-content-offset-y: -50px;
+  --book-content-left: calc(var(--book-page-left) + var(--book-page-margin));
+  --book-content-top: calc(var(--book-page-top) + var(--book-page-margin) + var(--book-content-offset-y));
+  --book-content-width: calc(var(--book-page-width) - 2 * var(--book-page-margin));
+  --book-content-height: calc(var(--book-page-height) - 2 * var(--book-page-margin));
+  --book-content-full-width: var(--book-content-width);
+  --book-content-split-width: 606px;
+  --book-form-width: 456px;
+  --book-form-left: calc(var(--book-content-left) + var(--book-content-width) - var(--book-form-width));
+  --book-page-right: calc(var(--book-page-left) + var(--book-page-width));
+  --win-chrome-top: calc(var(--book-page-top) - 120px);
+  --win-chrome-right: calc(1445px - var(--book-page-right) + 50px);
+  --win-mark-gap: 24px;
+  --win-tab-icon-offset-y: -20px;
+  --home-right-left: calc(var(--book-content-left) + var(--book-content-split-width) + 70px);
 }
 
 html,
@@ -78,7 +104,7 @@ body {
   position: relative;
   width: 1445px;
   height: 970px;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .book-stage-bg,
@@ -125,7 +151,7 @@ body {
 
 .book-marks-visual {
   position: absolute;
-  left: 0;
+  left: var(--mark-inset);
   top: 0;
   width: 290px;
   height: 970px;
@@ -157,11 +183,12 @@ body {
 
 .book-marks {
   position: absolute;
-  left: 0;
+  left: var(--mark-inset);
   top: 0;
   width: 290px;
   height: 970px;
   z-index: 35;
+  pointer-events: none;
 }
 
 .book-mark {
@@ -174,6 +201,7 @@ body {
   margin: 0;
   background: transparent;
   cursor: pointer;
+  pointer-events: auto;
   -webkit-app-region: no-drag;
 }
 
@@ -184,7 +212,7 @@ body {
 
 .book-mark-icon {
   position: absolute;
-  left: 64px;
+  left: var(--mark-icon-left);
   top: 50%;
   width: var(--mark-icon);
   height: var(--mark-icon);
@@ -217,6 +245,7 @@ body {
   flex-direction: row-reverse;
   align-items: center;
   z-index: 36;
+  pointer-events: auto;
 }
 
 .volume-drawer {
@@ -283,10 +312,10 @@ body {
 
 .win-marks-visual {
   position: absolute;
-  top: 0;
-  right: 0;
-  width: 240px;
-  height: 120px;
+  top: var(--win-chrome-top);
+  right: var(--win-chrome-right);
+  width: calc(var(--mark-vertical-w) * 2 + var(--win-mark-gap));
+  height: var(--mark-vertical-h);
   z-index: 44;
   pointer-events: none;
   overflow: visible;
@@ -295,15 +324,14 @@ body {
 .win-mark-bg-img {
   position: absolute;
   top: 0;
-  width: var(--mark-w);
-  height: var(--mark-h);
+  width: var(--mark-vertical-w);
+  height: calc(var(--mark-vertical-h) + var(--mark-vertical-crop));
   display: block;
-  transform: rotate(-90deg);
-  transform-origin: 100% 0;
+  clip-path: inset(0 0 var(--mark-vertical-crop) 0);
 }
 
 .win-mark-bg-img[data-for='minimize'] {
-  right: 120px;
+  right: calc(var(--mark-vertical-w) + var(--win-mark-gap));
 }
 
 .win-mark-bg-img[data-for='close'] {
@@ -312,18 +340,18 @@ body {
 
 .win-chrome {
   position: absolute;
-  top: 0;
-  right: 0;
-  width: 240px;
-  height: 120px;
+  top: var(--win-chrome-top);
+  right: var(--win-chrome-right);
+  width: calc(var(--mark-vertical-w) * 2 + var(--win-mark-gap));
+  height: calc(120px - var(--mark-vertical-crop));
   z-index: 45;
 }
 
 .win-tab-btn {
   position: absolute;
   top: 0;
-  width: 120px;
-  height: 120px;
+  width: 55px;
+  height: calc(120px - var(--mark-vertical-crop));
   border: none;
   background: transparent;
   cursor: pointer;
@@ -333,11 +361,13 @@ body {
 }
 
 #win-minimize {
-  left: 0;
+  right: calc(var(--mark-vertical-w) + var(--win-mark-gap));
+  left: auto;
 }
 
 #win-close {
   right: 0;
+  left: auto;
 }
 
 .win-tab-icon {
@@ -345,9 +375,9 @@ body {
   left: 50%;
   top: 50%;
   z-index: 2;
-  width: 41px;
-  height: 41px;
-  transform: translate(-50%, -50%);
+  width: var(--win-tab-icon);
+  height: var(--win-tab-icon);
+  transform: translate(-50%, calc(-50% + var(--win-tab-icon-offset-y)));
   display: block;
   pointer-events: none;
 }
@@ -371,18 +401,14 @@ body {
 
 .book-page.active {
   display: block;
+  pointer-events: auto;
 }
 
-.book-page.legacy-page {
-  left: 300px;
-  top: 110px;
-  width: 1100px;
-  height: 820px;
-  overflow: auto;
-  padding: 16px;
-  background: rgba(26, 26, 46, 0.94);
-  border-radius: 4px;
-  color: #eee;
+.book-panel,
+.book-panel-body,
+.book-reminder-row,
+.reminder-toggle {
+  pointer-events: auto;
 }
 
 /* —— Home page (reference layout) —— */
@@ -393,10 +419,10 @@ body {
 
 .home-reminders-panel {
   position: absolute;
-  left: 190px;
-  top: 149px;
-  width: 606px;
-  height: 704px;
+  left: var(--book-content-left);
+  top: var(--book-content-top);
+  width: var(--book-content-split-width);
+  height: var(--book-content-height);
   background: #e2ded4;
   border: 1px solid #b1a490;
   display: flex;
@@ -454,8 +480,8 @@ body {
 
 .home-level-block {
   position: absolute;
-  left: 850px;
-  top: 150px;
+  left: var(--home-right-left);
+  top: var(--book-content-top);
   width: 430px;
   text-align: center;
 }
@@ -479,6 +505,12 @@ body {
 }
 
 #home-level {
+  font-size: 67px;
+  line-height: 1;
+  color: #5e544e;
+}
+
+#achievements-level {
   font-size: 67px;
   line-height: 1;
   color: #5e544e;
@@ -521,8 +553,8 @@ body {
 
 .home-recent-panel {
   position: absolute;
-  left: 853px;
-  top: 501px;
+  left: calc(var(--home-right-left) + 3px);
+  top: calc(var(--book-content-top) + 352px);
   width: 433px;
   height: 350px;
   background: #e2ded4;
@@ -563,4 +595,609 @@ body {
   text-align: center;
   font-size: 18px;
   color: #8a8078;
+}
+
+/* —— Shared book page panels (reminders, achievements) —— */
+
+#view-reminders,
+#view-achievements {
+  color: #5e544e;
+}
+
+.book-panel {
+  position: absolute;
+  background: #e2ded4;
+  border: 1px solid #b1a490;
+  display: flex;
+  flex-direction: column;
+}
+
+.book-panel-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 0;
+}
+
+.book-view-toggle {
+  display: flex;
+  gap: 6px;
+  background: #d8d2c8;
+  padding: 4px;
+  border: 1px solid #b1a490;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.book-view-toggle button {
+  padding: 6px 14px;
+  border: none;
+  border-radius: 2px;
+  background: transparent;
+  color: #6a5e59;
+  font-size: 16px;
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+}
+
+.book-view-toggle button.active {
+  background: #c69532;
+  color: #efeeec;
+}
+
+.book-view-toggle button:hover:not(.active) {
+  background: #b8b0a0;
+}
+
+/* —— Reminders page —— */
+
+.reminders-book-layout {
+  position: absolute;
+  inset: 0;
+}
+
+.reminders-book-layout .reminders-list-panel {
+  left: var(--book-content-left);
+  top: var(--book-content-top);
+  width: var(--book-content-full-width);
+  height: var(--book-content-height);
+  transition: width 0.3s ease;
+}
+
+.reminders-book-layout.form-open .reminders-list-panel {
+  width: var(--book-content-split-width);
+}
+
+.reminders-book-layout .reminder-form-panel {
+  left: var(--book-form-left);
+  top: var(--book-content-top);
+  width: var(--book-form-width);
+  height: var(--book-content-height);
+  background: #c8c0b0;
+  border-color: #d2c1a7;
+}
+
+.reminders-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 16px 0 24px;
+}
+
+.reminders-panel-header h3 {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  font-size: 24px;
+}
+
+.reminders-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.reminders-icon-btn {
+  width: 36px;
+  height: 36px;
+  border: none;
+  padding: 6px;
+  border-radius: 4px;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-app-region: no-drag;
+}
+
+.reminders-icon-btn:hover {
+  background: rgba(94, 84, 78, 0.12);
+}
+
+.reminders-icon-btn.is-active {
+  background: rgba(198, 149, 50, 0.35);
+}
+
+.reminders-icon-btn img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+}
+
+.reminders-list-body {
+  padding-bottom: 72px;
+}
+
+.reminder-form-close {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  color: #5e544e;
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+}
+
+.reminder-form-close:hover {
+  color: #3e4059;
+}
+
+.reminder-form-panel .home-panel-header {
+  position: relative;
+}
+
+.reminder-form-panel .book-form-body {
+  background: #c8c0b0;
+}
+
+.reminder-add-fab {
+  position: absolute;
+  left: calc(var(--book-content-left) + var(--book-content-width) - 56px - 24px);
+  top: calc(var(--book-content-top) + var(--book-content-height) - 56px - 24px);
+  width: 56px;
+  height: 56px;
+  border: none;
+  border-radius: 50%;
+  background: #c69532;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 45;
+  box-shadow: 0 4px 12px rgba(94, 84, 78, 0.35);
+  -webkit-app-region: no-drag;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.reminder-add-fab:hover {
+  background: #b3842d;
+  transform: scale(1.05);
+}
+
+.reminder-add-fab img {
+  width: 28px;
+  height: 28px;
+  display: block;
+}
+
+.reminders-book-layout.form-open .reminder-add-fab {
+  display: none;
+}
+
+.book-form-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 20px 20px;
+}
+
+.book-form-body .form-field {
+  margin-bottom: 12px;
+}
+
+.book-form-body .form-field label {
+  display: block;
+  font-size: 16px;
+  color: #6a5e59;
+  margin-bottom: 4px;
+}
+
+.book-form-body .form-field input,
+.book-form-body .form-field select {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #b1a490;
+  border-radius: 4px;
+  background: #e5e3dd;
+  color: #5e544e;
+  color-scheme: light;
+}
+
+.reminder-form-panel .book-form-body .form-field input,
+.reminder-form-panel .book-form-body .form-field select {
+  background: #e2ded4;
+  border-color: #b1a490;
+}
+
+.book-form-body .form-field input[type='time'],
+.book-form-body .form-field input[type='date'] {
+  min-height: 38px;
+  cursor: pointer;
+}
+
+.book-form-body .day-picker label {
+  color: #6a5e59;
+  font-size: 14px;
+}
+
+.book-form-body .sound-row span {
+  color: #6a5e59;
+  font-size: 14px;
+}
+
+.book-form-body .form-row-toggle label {
+  color: #6a5e59;
+}
+
+.book-form-body .btn {
+  background: #c69532;
+  color: #efeeec;
+  border-radius: 4px;
+}
+
+.book-form-body .btn:hover:not(:disabled) {
+  background: #b3842d;
+}
+
+.book-form-body .btn-secondary {
+  background: #c8c0b0;
+  color: #5e544e;
+}
+
+.book-form-body .btn-secondary:hover:not(:disabled) {
+  background: #b8b0a0;
+}
+
+.book-form-body .btn-danger {
+  background: #a65a4a;
+  color: #efeeec;
+}
+
+.book-form-body .btn-danger:hover {
+  background: #944d3f;
+}
+
+.book-reminder-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 24px;
+  min-height: 56px;
+  border-bottom: 1px solid rgba(177, 164, 144, 0.35);
+  transition: background 0.15s ease;
+}
+
+.book-reminder-row:hover {
+  background: #ebe7df;
+}
+
+.book-reminder-row.disabled {
+  opacity: 0.55;
+}
+
+.book-reminder-row.disabled .title,
+.book-reminder-row.disabled .time {
+  text-decoration: line-through;
+  color: #8a8078;
+}
+
+.reminder-toggle {
+  width: 24px;
+  height: 24px;
+  margin: 0;
+  padding: 0;
+  border: 2px solid #c69532;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  flex-shrink: 0;
+  -webkit-app-region: no-drag;
+  pointer-events: auto;
+  position: relative;
+  z-index: 3;
+}
+
+.reminder-toggle.is-on {
+  background: #c69532;
+  box-shadow: inset 0 0 0 3px #e2ded4;
+}
+
+.selection-mode .reminder-toggle.is-on {
+  box-shadow: inset 0 0 0 3px #e2ded4;
+}
+
+.book-reminder-row .main {
+  flex: 1;
+  min-width: 0;
+}
+
+.book-reminder-row .title {
+  font-size: 19px;
+  color: #6a5e59;
+  margin-bottom: 2px;
+}
+
+.book-reminder-row .meta {
+  font-size: 14px;
+  color: #8a8078;
+}
+
+.book-reminder-row .time {
+  font-size: 19px;
+  color: #6a5e59;
+  flex-shrink: 0;
+  margin-right: 8px;
+}
+
+.book-reminder-row .row-hover-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+.book-reminder-row:hover .row-hover-actions {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.selection-mode .book-reminder-row .row-hover-actions {
+  display: none;
+}
+
+.book-reminder-row .row-hover-actions .reminders-icon-btn {
+  width: 32px;
+  height: 32px;
+  padding: 4px;
+}
+
+.reminders-sound-btn {
+  width: 44px;
+  height: 44px;
+  border: 1px solid #b1a490;
+  border-radius: 4px;
+  background: #e2ded4;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+}
+
+.reminders-sound-btn:hover {
+  background: #d8d2c8;
+}
+
+.reminders-sound-btn img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+}
+
+.book-week-group {
+  border-bottom: 1px solid #b1a490;
+}
+
+.book-week-group:last-child {
+  border-bottom: none;
+}
+
+.book-week-heading {
+  margin: 0;
+  padding: 12px 24px 8px;
+  font-size: 18px;
+  font-weight: 400;
+  color: #5e544e;
+  background: rgba(200, 192, 176, 0.35);
+}
+
+/* —— Achievements page —— */
+
+.achievements-book-layout .achievements-list-panel {
+  left: var(--book-content-left);
+  top: var(--book-content-top);
+  width: var(--book-content-split-width);
+  height: var(--book-content-height);
+}
+
+.achievements-book-layout .achievements-level-block {
+  left: var(--home-right-left);
+  top: var(--book-content-top);
+}
+
+.book-form-inline {
+  padding: 16px 20px;
+  border-bottom: 1px solid #b1a490;
+  background: rgba(229, 227, 221, 0.5);
+}
+
+.book-form-inline label {
+  display: block;
+  font-size: 16px;
+  color: #6a5e59;
+  margin-bottom: 8px;
+}
+
+.book-form-inline .achievement-input-row input {
+  flex: 1;
+  padding: 8px 10px;
+  border: 1px solid #b1a490;
+  border-radius: 4px;
+  background: #e5e3dd;
+  color: #5e544e;
+}
+
+.book-form-inline .btn {
+  background: #c69532;
+  color: #efeeec;
+  border-radius: 4px;
+}
+
+.book-form-inline .btn:hover:not(:disabled) {
+  background: #b3842d;
+}
+
+.achievements-progress-fraction {
+  font-size: 18px;
+  color: #6a5e59;
+  margin-bottom: 14px;
+}
+
+.achievements-progress-label {
+  margin: 10px 0 0;
+  font-size: 16px;
+  color: #6a5e59;
+}
+
+#achievements-progress-fill {
+  height: 100%;
+  width: 0%;
+  background: #c69532;
+  transition: width 0.3s ease;
+}
+
+.book-achievement-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  min-height: 52px;
+  border-bottom: 1px solid rgba(177, 164, 144, 0.35);
+  transition: background 0.15s ease;
+}
+
+.book-achievement-row:hover {
+  background: #ebe7df;
+}
+
+.achievement-dot {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #c69532;
+  box-shadow: inset 0 0 0 4px #e2ded4;
+}
+
+.book-achievement-row .main {
+  flex: 1;
+  min-width: 0;
+}
+
+.book-achievement-row .name {
+  font-size: 19px;
+  color: #6a5e59;
+}
+
+.book-achievement-row .date {
+  font-size: 14px;
+  color: #8a8078;
+  margin-top: 2px;
+}
+
+.book-achievement-row .row-hover-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+.book-achievement-row:hover .row-hover-actions {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.book-achievement-row .row-hover-actions .reminders-icon-btn {
+  width: 32px;
+  height: 32px;
+  padding: 4px;
+}
+
+.achievement-input-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.achievement-add-btn {
+  width: 52px;
+  height: 52px;
+  border: none;
+  border-radius: 50%;
+  background: #c69532;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 10px rgba(94, 84, 78, 0.25);
+  transition: transform 0.15s ease, background 0.15s ease;
+  -webkit-app-region: no-drag;
+}
+
+.achievement-add-btn:hover {
+  background: #b3842d;
+  transform: scale(1.05);
+}
+
+.achievement-add-btn img {
+  width: 24px;
+  height: 24px;
+  display: block;
+}
+
+/* —— Reminder disable choice menu —— */
+
+.reminder-disable-menu {
+  position: fixed;
+  z-index: 100;
+  min-width: 260px;
+  max-width: 320px;
+  background: #e2ded4;
+  border: 1px solid #b1a490;
+  border-radius: 4px;
+  box-shadow: 0 8px 20px rgba(94, 84, 78, 0.28);
+  padding: 6px;
+  pointer-events: auto;
+  -webkit-app-region: no-drag;
+}
+
+.reminder-disable-menu-item {
+  display: block;
+  width: 100%;
+  border: none;
+  border-radius: 3px;
+  background: transparent;
+  color: #5e544e;
+  font-size: 15px;
+  text-align: left;
+  padding: 10px 12px;
+  cursor: pointer;
+}
+
+.reminder-disable-menu-item:hover {
+  background: #c8c0b0;
 }

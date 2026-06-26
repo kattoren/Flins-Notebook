@@ -1,6 +1,8 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('petApi', {
+  getScreenBounds: () => ipcRenderer.invoke('pet:getScreenBounds'),
+  getRoamMode: () => ipcRenderer.invoke('pet:getRoamMode'),
   getImageSrc: () => ipcRenderer.invoke('pet:getImageSrc'),
   getDimensions: () => ipcRenderer.invoke('pet:getDimensions'),
   getPosition: () => ipcRenderer.invoke('pet:getPosition'),
@@ -21,6 +23,12 @@ contextBridge.exposeInMainWorld('petApi', {
   },
   onVoicelineVolumeChange: (callback) => {
     ipcRenderer.on('voiceline-volume', (_event, volume) => callback(volume));
+  },
+  onRoamModeChange: (callback) => {
+    ipcRenderer.on('pet:roamMode', (_event, enabled) => callback(enabled));
+  },
+  onResetPhysics: (callback) => {
+    ipcRenderer.on('pet:resetPhysics', () => callback());
   },
   notifyReady: () => ipcRenderer.invoke('pet:ready'),
 });

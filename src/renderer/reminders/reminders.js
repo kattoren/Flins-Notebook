@@ -11,6 +11,8 @@ const {
   formatDate,
   formatTime12,
   getRemindersForDay,
+  isReminderActiveOnDay,
+  countWeekOccurrences,
 } = window.AppShared;
 
 const REPEAT_LABELS = {
@@ -26,8 +28,12 @@ let reminders = [];
 let listMode = 'day';
 let editingId = null;
 let formSoundPath = '';
-let defaultAlarmLabel = 'Columbina alarm (default)';
+let selectionMode = false;
+let selectedIds = new Set();
 
+let layoutEl;
+let listPanelWrap;
+let formPanel;
 let listPanel;
 let formTitle;
 let titleInput;
@@ -37,32 +43,102 @@ let dateField;
 let dateInput;
 let daysField;
 let daysContainer;
-let soundLabel;
-let useDefaultBtn;
 let pickSoundBtn;
 let playCountInput;
-let enabledInput;
 let cancelBtn;
 let deleteBtn;
 let saveBtn;
 let dayViewBtn;
 let weekViewBtn;
+let bulkEditBtn;
+let bulkDeleteBtn;
+let addFabBtn;
+let formCloseBtn;
+let disableMenuEl = null;
 
-function basename(filePath) {
-  if (!filePath) return '';
-  const parts = filePath.replace(/\\/g, '/').split('/');
-  return parts[parts.length - 1];
+function dismissDisableMenu() {
+  if (!disableMenuEl) return;
+  disableMenuEl.remove();
+  disableMenuEl = null;
 }
 
-function getWeekDates(referenceDate) {
-  const start = new Date(referenceDate);
-  start.setHours(0, 0, 0, 0);
-  start.setDate(start.getDate() - start.getDay());
-  return Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(start);
-    d.setDate(start.getDate() + i);
-    return d;
+async function skipReminderOnDay(reminder, date) {
+  const dateStr = formatDate(date);
+  const skippedDates = [...(reminder.skippedDates || [])];
+  if (!skippedDates.includes(dateStr)) {
+    skippedDates.push(dateStr);
+  }
+  await window.api.remindersUpdate(reminder.id, { skippedDates });
+  await loadReminders();
+}
+
+async function disableReminderEntirely(reminderId) {
+  await window.api.remindersUpdate(reminderId, { enabled: false, skippedDates: [] });
+  await loadReminders();
+}
+
+async function enableReminderOnDay(reminder, date) {
+  const dateStr = formatDate(date);
+  const skippedDates = (reminder.skippedDates || []).filter((d) => d !== dateStr);
+
+  if (!reminder.enabled) {
+    await window.api.remindersUpdate(reminder.id, {
+      enabled: true,
+      skippedDates,
+    });
+  } else if (skippedDates.length !== (reminder.skippedDates || []).length) {
+    await window.api.remindersUpdate(reminder.id, { skippedDates });
+  }
+  await loadReminders();
+}
+
+function showDisableMenu(reminder, occurrenceDate, anchorEl) {
+  dismissDisableMenu();
+
+  const menu = document.createElement('div');
+  menu.className = 'reminder-disable-menu';
+  menu.innerHTML = `
+    <button type="button" class="reminder-disable-menu-item" data-action="one">
+      Disable this reminder only
+    </button>
+    <button type="button" class="reminder-disable-menu-item" data-action="all">
+      Disable all reminders of "${escapeHtml(reminder.title)}"
+    </button>
+  `;
+
+  menu.querySelector('[data-action="one"]').addEventListener('click', (e) => {
+    e.stopPropagation();
+    dismissDisableMenu();
+    skipReminderOnDay(reminder, occurrenceDate).catch((err) => {
+      console.error('Skip reminder failed:', err);
+    });
   });
+
+  menu.querySelector('[data-action="all"]').addEventListener('click', (e) => {
+    e.stopPropagation();
+    dismissDisableMenu();
+    disableReminderEntirely(reminder.id).catch((err) => {
+      console.error('Disable reminder failed:', err);
+    });
+  });
+
+  document.body.appendChild(menu);
+  disableMenuEl = menu;
+
+  const rect = anchorEl.getBoundingClientRect();
+  const menuRect = menu.getBoundingClientRect();
+  let left = rect.left;
+  let top = rect.bottom + 6;
+
+  if (left + menuRect.width > window.innerWidth - 8) {
+    left = window.innerWidth - menuRect.width - 8;
+  }
+  if (top + menuRect.height > window.innerHeight - 8) {
+    top = rect.top - menuRect.height - 6;
+  }
+
+  menu.style.left = `${Math.max(8, left)}px`;
+  menu.style.top = `${Math.max(8, top)}px`;
 }
 
 function repeatSummary(reminder) {
@@ -103,15 +179,25 @@ function updateConditionalFields() {
   daysField.classList.toggle('hidden', repeat !== 'weekly' && repeat !== 'custom');
 }
 
-function soundSummary(reminder) {
-  if (reminder.soundPath) {
-    return basename(reminder.soundPath);
-  }
-  return defaultAlarmLabel;
+async function loadIcon(img) {
+  if (!img?.dataset?.icon) return;
+  img.src = await window.api.getUiAssetUrl(img.dataset.icon);
 }
 
-function updateSoundLabel() {
-  soundLabel.textContent = formSoundPath ? basename(formSoundPath) : defaultAlarmLabel;
+async function loadReminderIcons(root = document) {
+  const loads = [...root.querySelectorAll('img[data-icon]')].map(loadIcon);
+  await Promise.all(loads);
+}
+
+function openForm() {
+  layoutEl.classList.add('form-open');
+  formPanel.classList.remove('hidden');
+}
+
+function closeForm() {
+  layoutEl.classList.remove('form-open');
+  formPanel.classList.add('hidden');
+  resetForm();
 }
 
 function resetForm() {
@@ -122,10 +208,8 @@ function resetForm() {
   repeatSelect.value = 'once';
   dateInput.value = formatDate(new Date());
   setSelectedDays([]);
-  enabledInput.checked = true;
   playCountInput.value = '1';
   updateConditionalFields();
-  updateSoundLabel();
   formTitle.textContent = 'New reminder';
   cancelBtn.classList.add('hidden');
   deleteBtn.classList.add('hidden');
@@ -139,91 +223,166 @@ function fillForm(reminder) {
   repeatSelect.value = reminder.repeat;
   dateInput.value = reminder.date || formatDate(new Date());
   setSelectedDays(reminder.days || []);
-  enabledInput.checked = reminder.enabled;
   playCountInput.value = String(reminder.playCount ?? 1);
-  updateSoundLabel();
   updateConditionalFields();
   formTitle.textContent = 'Edit reminder';
   cancelBtn.classList.remove('hidden');
   deleteBtn.classList.remove('hidden');
+  openForm();
 }
 
-function renderReminderCard(reminder) {
-  const card = document.createElement('div');
-  card.className = `reminder-card${reminder.enabled ? '' : ' disabled'}`;
-  card.innerHTML = `
-    <div class="reminder-card-main">
-      <div class="reminder-card-title">${escapeHtml(reminder.title)}</div>
-      <div class="reminder-card-meta">
-        ${formatTime12(reminder.time)} · ${repeatSummary(reminder)}
-        · ${escapeHtml(soundSummary(reminder))} · ${reminder.playCount ?? 1}×
-      </div>
+function setSelectionMode(on) {
+  selectionMode = on;
+  selectedIds.clear();
+  bulkEditBtn.classList.toggle('is-active', on);
+  bulkDeleteBtn.classList.toggle('hidden', !on);
+  listPanelWrap.classList.toggle('selection-mode', on);
+  renderList();
+}
+
+function toggleSelectionMode() {
+  setSelectionMode(!selectionMode);
+}
+
+async function deleteReminderById(id) {
+  await window.api.remindersDelete(id);
+  await loadReminders();
+}
+
+async function deleteSelectedReminders() {
+  if (!selectedIds.size) return;
+  const ids = [...selectedIds];
+  await Promise.all(ids.map((id) => window.api.remindersDelete(id)));
+  setSelectionMode(false);
+  await loadReminders();
+}
+
+function renderReminderRow(reminder, occurrenceDate) {
+  const row = document.createElement('div');
+  const activeOnDay = isReminderActiveOnDay(reminder, occurrenceDate);
+  row.className = `book-reminder-row${activeOnDay ? '' : ' disabled'}`;
+  row.dataset.id = reminder.id;
+
+  const isOn = selectionMode
+    ? selectedIds.has(reminder.id)
+    : activeOnDay;
+
+  row.innerHTML = `
+    <button
+      type="button"
+      class="reminder-toggle${isOn ? ' is-on' : ''}"
+      aria-label="${selectionMode ? 'Select reminder' : 'Enable or disable reminder'}"
+      aria-pressed="${isOn}"
+    ></button>
+    <div class="main">
+      <div class="title">${escapeHtml(reminder.title)}</div>
+      <div class="meta">${repeatSummary(reminder)} · ${reminder.playCount ?? 1}×</div>
     </div>
-    <div class="reminder-card-actions">
-      <button class="btn btn-secondary btn-sm" data-action="edit" type="button">Edit</button>
-      <button class="btn btn-secondary btn-sm" data-action="toggle" type="button">
-        ${reminder.enabled ? 'Disable' : 'Enable'}
+    <span class="time">${formatTime12(reminder.time)}</span>
+    <div class="row-hover-actions">
+      <button class="reminders-icon-btn row-edit-btn" type="button" aria-label="Edit reminder">
+        <img data-icon="Icons/icon_edit.svg" alt="">
+      </button>
+      <button class="reminders-icon-btn row-delete-btn" type="button" aria-label="Delete reminder">
+        <img data-icon="Icons/icon_delete.svg" alt="">
       </button>
     </div>
   `;
 
-  card.querySelector('[data-action="edit"]').addEventListener('click', () => fillForm(reminder));
-  card.querySelector('[data-action="toggle"]').addEventListener('click', async () => {
-    await window.api.remindersUpdate(reminder.id, { enabled: !reminder.enabled });
-    await loadReminders();
+  const toggle = row.querySelector('.reminder-toggle');
+  toggle.addEventListener('click', (e) => {
+    e.stopPropagation();
+
+    if (selectionMode) {
+      const nowOn = !toggle.classList.contains('is-on');
+      toggle.classList.toggle('is-on', nowOn);
+      toggle.setAttribute('aria-pressed', String(nowOn));
+      if (nowOn) {
+        selectedIds.add(reminder.id);
+      } else {
+        selectedIds.delete(reminder.id);
+      }
+      return;
+    }
+
+    const turningOn = !toggle.classList.contains('is-on');
+
+    if (turningOn) {
+      enableReminderOnDay(reminder, occurrenceDate).catch((err) => {
+        console.error('Enable reminder failed:', err);
+      });
+      return;
+    }
+
+    if (countWeekOccurrences(reminder) > 1) {
+      showDisableMenu(reminder, occurrenceDate, toggle);
+      return;
+    }
+
+    disableReminderEntirely(reminder.id).catch((err) => {
+      console.error('Disable reminder failed:', err);
+    });
   });
 
-  return card;
+  row.querySelector('.row-edit-btn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (selectionMode) return;
+    fillForm(reminder);
+  });
+
+  row.querySelector('.row-delete-btn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (selectionMode) return;
+    deleteReminderById(reminder.id).catch((err) => console.error('Delete reminder failed:', err));
+  });
+
+  loadReminderIcons(row);
+  return row;
 }
 
 function renderDayView() {
   const today = new Date();
   const todays = getRemindersForDay(reminders, today);
+  const headingEl = document.getElementById('reminders-list-heading');
+  if (headingEl) {
+    headingEl.textContent = `Today — ${DAY_NAMES[today.getDay()]}, ${formatDate(today)}`;
+  }
   listPanel.innerHTML = '';
 
-  const heading = document.createElement('h3');
-  heading.textContent = `Today — ${DAY_NAMES[today.getDay()]}, ${formatDate(today)}`;
-  heading.style.margin = '0 0 12px';
-  listPanel.appendChild(heading);
-
   if (!todays.length) {
-    const empty = document.createElement('div');
-    empty.className = 'empty-state';
-    empty.textContent = 'No reminders for today.';
-    listPanel.appendChild(empty);
+    listPanel.innerHTML = '<div class="home-empty">No reminders for today.</div>';
     return;
   }
 
-  const list = document.createElement('div');
-  list.className = 'reminder-list';
-  todays.forEach((r) => list.appendChild(renderReminderCard(r)));
-  listPanel.appendChild(list);
+  todays.forEach((r) => listPanel.appendChild(renderReminderRow(r, today)));
 }
 
 function renderWeekView() {
   const weekDates = getWeekDates(new Date());
+  const headingEl = document.getElementById('reminders-list-heading');
+  if (headingEl) {
+    headingEl.textContent = 'This Week';
+  }
   listPanel.innerHTML = '';
 
   weekDates.forEach((date) => {
     const dayReminders = getRemindersForDay(reminders, date);
     const group = document.createElement('div');
-    group.className = 'week-group';
+    group.className = 'book-week-group';
 
-    const heading = document.createElement('h3');
+    const heading = document.createElement('h4');
+    heading.className = 'book-week-heading';
     heading.textContent = `${DAY_NAMES[date.getDay()]} — ${formatDate(date)}`;
     group.appendChild(heading);
 
     if (!dayReminders.length) {
       const empty = document.createElement('div');
-      empty.className = 'empty-state';
-      empty.style.padding = '12px';
+      empty.className = 'home-empty';
+      empty.style.padding = '16px';
       empty.textContent = 'No reminders';
       group.appendChild(empty);
     } else {
-      const list = document.createElement('div');
-      list.className = 'reminder-list';
-      dayReminders.forEach((r) => list.appendChild(renderReminderCard(r)));
-      group.appendChild(list);
+      dayReminders.forEach((r) => group.appendChild(renderReminderRow(r, date)));
     }
 
     listPanel.appendChild(group);
@@ -248,6 +407,17 @@ async function loadReminders() {
 
 window.refreshReminders = loadReminders;
 
+function getWeekDates(referenceDate) {
+  const start = new Date(referenceDate);
+  start.setHours(0, 0, 0, 0);
+  start.setDate(start.getDate() - start.getDay());
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(start);
+    d.setDate(start.getDate() + i);
+    return d;
+  });
+}
+
 async function saveReminder() {
   const repeat = repeatSelect.value;
   if (!titleInput.value.trim() || !timeInput.value) {
@@ -262,20 +432,28 @@ async function saveReminder() {
     date: repeat === 'once' ? dateInput.value : null,
     soundPath: formSoundPath,
     playCount: Number(playCountInput.value),
-    enabled: enabledInput.checked,
+    enabled: true,
   };
 
   if (editingId) {
+    const existing = reminders.find((r) => r.id === editingId);
+    if (existing) {
+      payload.enabled = existing.enabled;
+      payload.skippedDates = existing.skippedDates || [];
+    }
     await window.api.remindersUpdate(editingId, payload);
   } else {
     await window.api.remindersCreate(payload);
   }
 
-  resetForm();
+  closeForm();
   await loadReminders();
 }
 
 function initReminders() {
+  layoutEl = document.getElementById('reminders-book-layout');
+  listPanelWrap = document.getElementById('reminders-list-panel-wrap');
+  formPanel = document.getElementById('reminder-form-panel');
   listPanel = document.getElementById('reminders-list-panel');
   formTitle = document.getElementById('form-title');
   titleInput = document.getElementById('reminder-title');
@@ -285,46 +463,35 @@ function initReminders() {
   dateInput = document.getElementById('reminder-date');
   daysField = document.getElementById('reminder-days-field');
   daysContainer = document.getElementById('reminder-days');
-  soundLabel = document.getElementById('reminder-sound-label');
-  useDefaultBtn = document.getElementById('reminder-use-default');
   pickSoundBtn = document.getElementById('reminder-pick-sound');
   playCountInput = document.getElementById('reminder-play-count');
-  enabledInput = document.getElementById('reminder-enabled');
   cancelBtn = document.getElementById('reminder-cancel');
   deleteBtn = document.getElementById('reminder-delete');
   saveBtn = document.getElementById('reminder-save');
   dayViewBtn = document.getElementById('reminders-day-view');
   weekViewBtn = document.getElementById('reminders-week-view');
+  bulkEditBtn = document.getElementById('reminders-bulk-edit');
+  bulkDeleteBtn = document.getElementById('reminders-bulk-delete');
+  addFabBtn = document.getElementById('reminder-add-fab');
+  formCloseBtn = document.getElementById('reminder-form-close');
 
-  if (!listPanel || !saveBtn || !dayViewBtn || !weekViewBtn || !playCountInput) {
+  if (!layoutEl || !listPanel || !saveBtn || !dayViewBtn || !weekViewBtn || !playCountInput) {
     throw new Error('Reminders: required elements missing');
   }
-
-  window.api.getDefaultAlarmLabel()
-    .then((label) => {
-      defaultAlarmLabel = label;
-      updateSoundLabel();
-    })
-    .catch(() => {});
 
   buildDayPicker();
   dateInput.value = formatDate(new Date());
   playCountInput.value = '1';
   updateConditionalFields();
-  updateSoundLabel();
+
+  loadReminderIcons(document.getElementById('view-reminders'));
 
   repeatSelect.addEventListener('change', updateConditionalFields);
-
-  useDefaultBtn.addEventListener('click', () => {
-    formSoundPath = '';
-    updateSoundLabel();
-  });
 
   pickSoundBtn.addEventListener('click', async () => {
     const pickedPath = await window.api.pickAudio();
     if (pickedPath) {
       formSoundPath = pickedPath;
-      updateSoundLabel();
     }
   });
 
@@ -332,13 +499,15 @@ function initReminders() {
     saveReminder().catch((err) => console.error('Save reminder failed:', err));
   });
 
-  cancelBtn.addEventListener('click', resetForm);
+  cancelBtn.addEventListener('click', closeForm);
+
+  formCloseBtn?.addEventListener('click', closeForm);
 
   deleteBtn.addEventListener('click', () => {
     if (!editingId) return;
     window.api.remindersDelete(editingId)
       .then(() => {
-        resetForm();
+        closeForm();
         return loadReminders();
       })
       .catch((err) => console.error('Delete reminder failed:', err));
@@ -356,6 +525,24 @@ function initReminders() {
     weekViewBtn.classList.add('active');
     dayViewBtn.classList.remove('active');
     renderList();
+  });
+
+  bulkEditBtn.addEventListener('click', toggleSelectionMode);
+
+  bulkDeleteBtn.addEventListener('click', () => {
+    deleteSelectedReminders().catch((err) => console.error('Bulk delete failed:', err));
+  });
+
+  addFabBtn.addEventListener('click', () => {
+    dismissDisableMenu();
+    resetForm();
+    openForm();
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!disableMenuEl) return;
+    if (disableMenuEl.contains(e.target)) return;
+    dismissDisableMenu();
   });
 
   loadReminders().catch((err) => console.error('Load reminders failed:', err));
