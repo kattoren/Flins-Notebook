@@ -18,9 +18,11 @@ const PET_BUBBLE_MAX_HEIGHT = 220;
 const PET_BUBBLE_AREA = PET_BUBBLE_GAP + PET_BUBBLE_MAX_HEIGHT;
 
 const { getBookWindowSize } = require('./bookLayout');
+const { createPetPhysics } = require('./pet/petPhysics');
 
 let mainWindow = null;
 let petWindow = null;
+let petPhysics = null;
 let tray = null;
 let dataStore = null;
 let petAlwaysOnTop = true;
@@ -134,9 +136,23 @@ function isPetRoamModeEnabled() {
   return dataStore.settings.get().petRoamMode !== false;
 }
 
+function ensurePetPhysics() {
+  if (!petPhysics) {
+    petPhysics = createPetPhysics({
+      getPetWindow: () => petWindow,
+      getScreenBounds: getPetScreenBounds,
+      getRoamMode: isPetRoamModeEnabled,
+      isPetBusy: () => false,
+    });
+  }
+  return petPhysics;
+}
+
 function setPetRoamMode(enabled) {
   dataStore.settings.update({ petRoamMode: enabled });
-  sendToPetWindow('pet:roamMode', enabled);
+  if (petPhysics) {
+    petPhysics.onRoamModeChanged(enabled);
+  }
 }
 
 function setPetAlwaysOnTop(enabled) {
@@ -194,6 +210,9 @@ function isPetVisible() {
 
 function dismissPet() {
   stopPetAudio();
+  if (petPhysics) {
+    petPhysics.stop();
+  }
   if (petWindow && !petWindow.isDestroyed()) {
     petWindow.hide();
   }
@@ -270,7 +289,7 @@ function summonPet() {
   petWindow.setPosition(x, y);
   petWindow.show();
   notifyPetVisibility(true);
-  sendToPetWindow('pet:resetPhysics');
+  ensurePetPhysics().reset();
   playGreetingVoiceline();
 }
 
@@ -489,10 +508,12 @@ function createPetWindow() {
     lockPetWindowSize(petWindow, petWidth, winH);
     petWindow.show();
     notifyPetVisibility(true);
+    ensurePetPhysics().reset();
   });
 
   petWindow.on('closed', () => {
     petWindow = null;
+    petPhysics = null;
   });
 }
 
@@ -558,9 +579,19 @@ ipcMain.handle('pet:getPosition', () => {
   return { x, y };
 });
 
-ipcMain.handle('pet:setPosition', (_event, x, y) => {
-  if (petWindow) {
-    petWindow.setPosition(Math.round(x), Math.round(y));
+ipcMain.on('pet:dragStart', (_event, screenX, screenY) => {
+  ensurePetPhysics().dragStart(screenX, screenY);
+});
+
+ipcMain.on('pet:dragMove', (_event, screenX, screenY) => {
+  if (petPhysics) {
+    petPhysics.dragMove(screenX, screenY);
+  }
+});
+
+ipcMain.on('pet:dragEnd', (_event, payload) => {
+  if (petPhysics) {
+    petPhysics.dragEnd(payload);
   }
 });
 
