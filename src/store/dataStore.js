@@ -9,11 +9,13 @@ function clampPlayCount(value) {
 }
 
 function normalizeReminder(reminder) {
+  const preAlert = Number(reminder.preAlertMinutes);
   return {
     ...reminder,
     playCount: clampPlayCount(reminder.playCount ?? 1),
     days: Array.isArray(reminder.days) ? reminder.days : [],
     skippedDates: Array.isArray(reminder.skippedDates) ? reminder.skippedDates : [],
+    preAlertMinutes: Number.isFinite(preAlert) && preAlert > 0 ? Math.round(preAlert) : 0,
   };
 }
 
@@ -24,7 +26,11 @@ function createDefaultData(petImagePath) {
     settings: {
       petEnabled: true,
       petAlwaysOnTop: true,
-      petRoamMode: true,
+      petRoamMode: false,
+      petForm: 'gif',
+      petName: '',
+      pinMessage: '',
+      timerVisible: true,
       petImage: petImagePath,
       petVoicelines: [],
       autoLaunch: false,
@@ -71,7 +77,9 @@ function createReminderStore(store, defaults) {
           playCount: clampPlayCount(input.playCount),
           enabled: input.enabled !== false,
           skippedDates: [],
+          preAlertMinutes: input.preAlertMinutes ? Math.max(0, Math.round(Number(input.preAlertMinutes))) : 0,
           lastFiredAt: null,
+          lastPreAlertFiredAt: null,
           createdAt: Date.now(),
         };
         data.reminders.push(created);

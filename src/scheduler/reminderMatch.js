@@ -32,6 +32,13 @@ function reminderMatchesDay(reminder, date) {
   }
 }
 
+function minutesToTime24(totalMinutes) {
+  const wrapped = ((totalMinutes % (24 * 60)) + (24 * 60)) % (24 * 60);
+  const h = Math.floor(wrapped / 60);
+  const m = wrapped % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
+
 function firedInSameMinute(lastFiredAt, now) {
   if (!lastFiredAt) return false;
   const last = new Date(lastFiredAt);
@@ -58,9 +65,25 @@ function shouldFireReminder(reminder, now) {
   return true;
 }
 
+function shouldFirePreAlert(reminder, now) {
+  const minutes = Number(reminder.preAlertMinutes);
+  if (!reminder.enabled || !minutes || minutes <= 0) return false;
+  if (isSkippedOnDay(reminder, now)) return false;
+  if (!reminderMatchesDay(reminder, now)) return false;
+  if (firedInSameMinute(reminder.lastPreAlertFiredAt, now)) return false;
+
+  const [h, m] = reminder.time.split(':').map(Number);
+  const targetMinutes = h * 60 + m - minutes;
+  const nowTime = formatTimeLocal(now);
+  const alertTime = minutesToTime24(targetMinutes);
+  return nowTime === alertTime;
+}
+
 module.exports = {
   formatDateLocal,
   formatTimeLocal,
   reminderMatchesDay,
   shouldFireReminder,
+  shouldFirePreAlert,
+  minutesToTime24,
 };

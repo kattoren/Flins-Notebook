@@ -1,3 +1,11 @@
+@font-face {
+  font-family: 'Flins UI';
+  src: url('../../../assets/fonts/zh-cn.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -9,7 +17,7 @@ body {
 }
 
 body {
-  font-family: system-ui, sans-serif;
+  font-family: 'Flins UI', system-ui, sans-serif;
   background: transparent;
   color: #eee;
   overflow: hidden;

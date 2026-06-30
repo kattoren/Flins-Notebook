@@ -30,6 +30,10 @@ function getTopicForFile(filePath) {
 }
 
 function getDialogueForFile(filePath) {
+  const base = path.basename(filePath, '.mp3').toLowerCase();
+  if (base === 'oya_oya') return 'オヤ〜 オヤ〜';
+  if (/^oya_\d+$/.test(base)) return 'オヤ';
+
   const topic = getTopicForFile(filePath);
   return topic ? DIALOGUE_LINES[topic] : '';
 }
@@ -51,7 +55,10 @@ function getGreetingVoiceline() {
 }
 
 function getRandomChatVoiceline() {
-  const chats = listVoicelines('flins_chat_');
+  const chats = [
+    ...listVoicelines('flins_chat_'),
+    ...listVoicelines('oya_'),
+  ];
   if (!chats.length) return null;
   const filePath = chats[Math.floor(Math.random() * chats.length)];
   return getVoicelinePayload(filePath);

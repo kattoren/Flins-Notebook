@@ -11,6 +11,7 @@
   "build": {
     "appId": "com.flins.notes",
     "productName": "Flins Notes",
+    "icon": "assets/flins/flins_idle.png",
     "directories": {
       "output": "release"
     },
@@ -25,15 +26,12 @@
     "win": {
       "target": [
         "portable"
-      ]
+      ],
+      "signAndEditExecutable": false
     }
   },
   "devDependencies": {
     "electron": "^35.0.0",
     "electron-builder": "^25.1.8"
-  },
-  "dependencies": {
-    "pixi-spine": "^4.0.6",
-    "pixi.js": "^7.4.3"
   }
 }

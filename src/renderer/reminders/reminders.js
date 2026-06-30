@@ -45,6 +45,7 @@ let daysField;
 let daysContainer;
 let pickSoundBtn;
 let playCountInput;
+let preAlertInput;
 let cancelBtn;
 let deleteBtn;
 let saveBtn;
@@ -209,6 +210,7 @@ function resetForm() {
   dateInput.value = formatDate(new Date());
   setSelectedDays([]);
   playCountInput.value = '1';
+  if (preAlertInput) preAlertInput.value = '0';
   updateConditionalFields();
   formTitle.textContent = 'New reminder';
   cancelBtn.classList.add('hidden');
@@ -224,6 +226,9 @@ function fillForm(reminder) {
   dateInput.value = reminder.date || formatDate(new Date());
   setSelectedDays(reminder.days || []);
   playCountInput.value = String(reminder.playCount ?? 1);
+  if (preAlertInput) {
+    preAlertInput.value = String(reminder.preAlertMinutes ?? 0);
+  }
   updateConditionalFields();
   formTitle.textContent = 'Edit reminder';
   cancelBtn.classList.remove('hidden');
@@ -432,6 +437,7 @@ async function saveReminder() {
     date: repeat === 'once' ? dateInput.value : null,
     soundPath: formSoundPath,
     playCount: Number(playCountInput.value),
+    preAlertMinutes: preAlertInput ? Number(preAlertInput.value) : 0,
     enabled: true,
   };
 
@@ -465,6 +471,7 @@ function initReminders() {
   daysContainer = document.getElementById('reminder-days');
   pickSoundBtn = document.getElementById('reminder-pick-sound');
   playCountInput = document.getElementById('reminder-play-count');
+  preAlertInput = document.getElementById('reminder-pre-alert');
   cancelBtn = document.getElementById('reminder-cancel');
   deleteBtn = document.getElementById('reminder-delete');
   saveBtn = document.getElementById('reminder-save');

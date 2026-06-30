@@ -1,9 +1,18 @@
+@font-face {
+  font-family: 'Flins UI';
+  src: url('../../../assets/fonts/zh-cn.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 html,
 body {
   margin: 0;
   padding: 0;
   overflow: hidden;
   background: transparent;
+  font-family: 'Flins UI', system-ui, 'Segoe UI', sans-serif;
 }
 
 #pet-root {
@@ -16,6 +25,27 @@ body {
 .flins-stack {
   position: relative;
   flex-shrink: 0;
+}
+
+.flins-visual {
+  position: relative;
+  flex-shrink: 0;
+}
+
+#flins-wrap.pet-form-lantern {
+  animation: lantern-float 3.6s infinite;
+}
+
+#flins-wrap.pet-form-lantern.pet-dragging {
+  animation-play-state: paused;
+}
+
+#flins-wrap.pet-hop {
+  animation: flins-hop 0.42s ease-in-out;
+}
+
+#flins-wrap.pet-form-lantern.pet-hop {
+  animation: flins-hop 0.42s ease-in-out;
 }
 
 #flins {
@@ -31,31 +61,37 @@ body {
   cursor: grabbing;
 }
 
-#flins.react {
-  animation: flins-bounce 0.45s ease-in-out 3;
-}
-
-#speech-bubble {
+.pet-bubbles-column {
   position: absolute;
   left: 50%;
-  bottom: calc(100% + 32px);
+  bottom: calc(100% + 8px);
   transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  max-width: 100%;
+  pointer-events: none;
+}
+
+.pet-chat-bubble {
+  position: relative;
   padding: 12px 14px 14px;
   background: #1a1a2e;
   border: 1px solid #2a2a40;
   border-radius: 12px;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
-  pointer-events: none;
   box-sizing: border-box;
+  width: 100%;
 }
 
-#speech-bubble.hidden {
+.pet-chat-bubble.hidden {
   display: none;
 }
 
-#speech-text {
+.pet-chat-bubble p {
   margin: 0;
-  font-family: system-ui, 'Segoe UI', sans-serif;
   font-size: 13px;
   line-height: 1.5;
   color: #fff;
@@ -75,7 +111,187 @@ body {
   transform: translateX(-50%) rotate(45deg);
 }
 
-@keyframes flins-bounce {
+#speech-bubble .speech-tail,
+#pin-bubble .speech-tail {
+  display: block;
+}
+
+.pet-timer-bubble {
+  pointer-events: auto;
+  padding-top: 10px;
+  padding-right: 28px;
+}
+
+.pet-bubble-close {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #aab;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+}
+
+.pet-bubble-close:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.pet-bubble-label {
+  font-size: 11px !important;
+  color: #9aa0b8 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 2px !important;
+}
+
+.pet-timer-display {
+  font-size: 20px !important;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.pet-panel-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 8px;
+  background: transparent;
+  z-index: 20;
+  pointer-events: auto;
+}
+
+.pet-panel-overlay.hidden {
+  display: none;
+}
+
+.pet-panel-card {
+  width: min(92%, 260px);
+  background: #1a1a2e;
+  border: 1px solid #2a2a40;
+  border-radius: 14px;
+  padding: 14px 14px 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  color: #fff;
+}
+
+.pet-panel-title {
+  margin: 0 0 10px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.pet-panel-field {
+  margin-bottom: 10px;
+}
+
+.pet-panel-field label:not(.pet-panel-radio) {
+  display: block;
+  font-size: 12px;
+  color: #b8bdd4;
+  margin-bottom: 4px;
+}
+
+.pet-panel-field input:not([type="radio"]),
+.pet-panel-field textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #3a3a55;
+  border-radius: 8px;
+  background: #12121f;
+  color: #fff;
+  padding: 8px 10px;
+  font: inherit;
+}
+
+.pet-panel-field textarea {
+  resize: vertical;
+  min-height: 64px;
+}
+
+.pet-panel-radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.pet-panel-radio {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #fff;
+  cursor: pointer;
+  user-select: none;
+}
+
+.pet-panel-radio input[type="radio"] {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  flex-shrink: 0;
+  accent-color: #6c8cff;
+}
+
+.pet-panel-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.pet-panel-btn {
+  border: none;
+  border-radius: 8px;
+  padding: 7px 12px;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  background: #4a5fd6;
+  color: #fff;
+}
+
+.pet-panel-btn:hover {
+  background: #5a6fe6;
+}
+
+.pet-panel-btn-secondary {
+  background: #2a2a40;
+  color: #ddd;
+}
+
+.pet-panel-btn-secondary:hover {
+  background: #353552;
+}
+
+.hidden {
+  display: none !important;
+}
+
+@keyframes flins-hop {
   0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-8px); }
+  45% { transform: translateY(-10px); }
+}
+
+@keyframes lantern-float {
+  0% {
+    transform: translateY(0);
+    animation-timing-function: cubic-bezier(0.22, 0.85, 0.35, 1);
+  }
+  38% {
+    transform: translateY(-14px);
+    animation-timing-function: cubic-bezier(0.45, 0, 0.75, 1);
+  }
+  100% {
+    transform: translateY(0);
+  }
 }

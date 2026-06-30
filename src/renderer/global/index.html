@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' file: data:; media-src 'self' file: data: blob:">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' file: data:; media-src 'self' file: data: blob:">
   <title></title>
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="book.css">
@@ -125,6 +125,10 @@
                 <div class="form-field">
                   <label for="reminder-play-count">Times to play</label>
                   <input id="reminder-play-count" type="number" min="1" max="10" value="1">
+                </div>
+                <div class="form-field">
+                  <label for="reminder-pre-alert">Pre-alert (minutes before)</label>
+                  <input id="reminder-pre-alert" type="number" min="0" max="1440" value="0" placeholder="0 = off">
                 </div>
                 <div class="form-actions">
                   <button id="reminder-save" class="btn" type="button">Save</button>
