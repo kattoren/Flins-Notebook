@@ -10,3 +10,4 @@ release/
 *.msi
 *.dmg
 *.AppImage
+*.log
