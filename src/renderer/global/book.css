@@ -90,6 +90,7 @@ body {
 #book-cover-open {
   position: absolute;
   inset: 0;
+  z-index: 60;
   border: none;
   padding: 0;
   margin: 0;
@@ -145,6 +146,8 @@ body {
   left: 40px;
   right: 40px;
   height: 100px;
+  -webkit-app-region: no-drag;
+  pointer-events: none;
 }
 
 /* —— Mark backgrounds (under page layer) —— */
@@ -460,6 +463,14 @@ body {
   min-height: 56px;
 }
 
+.home-reminder-row.is-next-up {
+  background: #f5e6a8;
+}
+
+.home-reminder-row.is-next-up .bullet {
+  background: #e8c84a;
+}
+
 .home-reminder-row .bullet {
   width: 15px;
   height: 17px;
@@ -554,9 +565,9 @@ body {
 .home-recent-panel {
   position: absolute;
   left: calc(var(--home-right-left) + 3px);
-  top: calc(var(--book-content-top) + 352px);
+  top: calc(var(--book-content-top) + 329px);
   width: 433px;
-  height: 350px;
+  height: calc(var(--book-content-height) - 329px);
   background: #e2ded4;
   border: 1px solid #b1a490;
   display: flex;
@@ -772,7 +783,8 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 45;
+  z-index: 120;
+  pointer-events: auto;
   box-shadow: 0 4px 12px rgba(94, 84, 78, 0.35);
   -webkit-app-region: no-drag;
   transition: transform 0.15s ease, background 0.15s ease;
@@ -988,11 +1000,37 @@ body {
   background: #d8d2c8;
 }
 
+.reminder-form-panel .home-panel-header h3,
+#form-title {
+  color: #5e544e;
+}
+
+.reminder-form-panel #reminder-time::-webkit-calendar-picker-indicator,
+.reminder-form-panel #reminder-date::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 1;
+  filter: brightness(0) saturate(100%) invert(37%) sepia(8%) saturate(747%) hue-rotate(314deg) brightness(91%) contrast(88%);
+}
+
+.reminder-sound-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.reminder-change-sound-btn {
+  flex: 1;
+  min-height: 44px;
+  padding: 8px 12px;
+  font-size: 15px;
+}
+
 .reminders-sound-btn img {
   width: 100%;
   height: 100%;
   display: block;
   object-fit: contain;
+  filter: brightness(0) saturate(100%) invert(37%) sepia(8%) saturate(747%) hue-rotate(314deg) brightness(91%) contrast(88%);
 }
 
 .book-week-group {
@@ -1014,6 +1052,18 @@ body {
 
 /* —— Achievements page —— */
 
+.achievements-book-layout {
+  position: absolute;
+  inset: 0;
+}
+
+.achievements-book-layout .achievement-form {
+  background: transparent;
+  border: none;
+  padding: 32px 20px 16px 20px;
+  margin: 0;
+}
+
 .achievements-book-layout .achievements-list-panel {
   left: var(--book-content-left);
   top: var(--book-content-top);
@@ -1030,6 +1080,9 @@ body {
   padding: 16px 20px;
   border-bottom: 1px solid #b1a490;
   background: rgba(229, 227, 221, 0.5);
+  position: relative;
+  z-index: 10;
+  pointer-events: auto;
 }
 
 .book-form-inline label {
@@ -1039,13 +1092,16 @@ body {
   margin-bottom: 8px;
 }
 
-.book-form-inline .achievement-input-row input {
+.achievement-input-row input {
   flex: 1;
   padding: 8px 10px;
   border: 1px solid #b1a490;
   border-radius: 4px;
   background: #e5e3dd;
   color: #5e544e;
+  -webkit-app-region: no-drag;
+  pointer-events: auto;
+  user-select: text;
 }
 
 .book-form-inline .btn {
@@ -1068,6 +1124,16 @@ body {
   margin: 10px 0 0;
   font-size: 16px;
   color: #6a5e59;
+}
+
+.achievements-affirmation {
+  margin: 80px auto 0;
+  width: 430px;
+  font-size: 29px;
+  font-weight: 400;
+  line-height: 1.35;
+  color: #5e544e;
+  text-align: center;
 }
 
 #achievements-progress-fill {
@@ -1140,6 +1206,21 @@ body {
   display: flex;
   gap: 10px;
   align-items: center;
+  position: relative;
+  z-index: 2;
+  pointer-events: auto;
+  -webkit-app-region: no-drag;
+}
+
+.achievement-input-row input.achievement-input-empty {
+  border-color: #c45c4a;
+  animation: achievement-shake 0.35s ease;
+}
+
+@keyframes achievement-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
 }
 
 .achievement-add-btn {
@@ -1156,6 +1237,9 @@ body {
   box-shadow: 0 4px 10px rgba(94, 84, 78, 0.25);
   transition: transform 0.15s ease, background 0.15s ease;
   -webkit-app-region: no-drag;
+  pointer-events: auto;
+  position: relative;
+  z-index: 12;
 }
 
 .achievement-add-btn:hover {
@@ -1167,6 +1251,7 @@ body {
   width: 24px;
   height: 24px;
   display: block;
+  pointer-events: none;
 }
 
 /* —— Reminder disable choice menu —— */

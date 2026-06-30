@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'">
+  <title></title>
+  <link rel="stylesheet" href="pet.css">
+</head>
+<body class="pet-panel-shell-body">
+  <div id="pet-panel-overlay" class="pet-panel-overlay pet-panel-overlay-screen" aria-hidden="false">
+    <div class="pet-panel-card">
+      <h2 id="pet-panel-title" class="pet-panel-title">Timer</h2>
+      <div id="pet-panel-body"></div>
+      <div class="pet-panel-actions">
+        <button type="button" id="pet-panel-cancel" class="pet-panel-btn pet-panel-btn-secondary">Cancel</button>
+        <button type="button" id="pet-panel-confirm" class="pet-panel-btn">Start</button>
+      </div>
+    </div>
+  </div>
+  <script src="petPanels.js"></script>
+  <script src="petPanelShell.js"></script>
+</body>
+</html>

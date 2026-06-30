@@ -46,9 +46,9 @@
             <div class="home-level-ring">
               <span id="home-level">0</span>
             </div>
-            <div id="home-progress-fraction">0 / 1</div>
+            <div id="home-progress-fraction" class="hidden" aria-hidden="true">0 / 1</div>
             <div class="home-total-banner">Total Count: <span id="home-total">0</span></div>
-            <div class="home-progress-track">
+            <div class="home-progress-track hidden" aria-hidden="true">
               <div id="home-progress-fill"></div>
             </div>
             <p id="home-progress-label" class="hidden" aria-hidden="true"></p>
@@ -118,9 +118,12 @@
                 </div>
                 <div class="form-field">
                   <label>Sound</label>
-                  <button id="reminder-pick-sound" class="reminders-sound-btn" type="button" aria-label="Choose alarm sound">
-                    <img data-icon="Icons/icon_volume_sound.svg" alt="">
-                  </button>
+                  <div class="reminder-sound-row">
+                    <button id="reminder-preview-sound" class="reminders-sound-btn" type="button" aria-label="Preview alarm sound">
+                      <img data-icon="Icons/icon_volume_sound.svg" alt="">
+                    </button>
+                    <button id="reminder-change-sound" class="btn btn-secondary reminder-change-sound-btn" type="button">Change audio</button>
+                  </div>
                 </div>
                 <div class="form-field">
                   <label for="reminder-play-count">Times to play</label>
@@ -167,12 +170,12 @@
               <div class="home-level-ring">
                 <span id="achievements-level">0</span>
               </div>
-              <div id="achievements-progress-fraction" class="achievements-progress-fraction">0 / 1</div>
               <div class="home-total-banner">Total Count: <span id="achievements-total">0</span></div>
               <div class="home-progress-track">
                 <div id="achievements-progress-fill"></div>
               </div>
               <p id="achievements-progress-label" class="achievements-progress-label">Log tasks to level up</p>
+              <p id="achievements-affirmation" class="achievements-affirmation"></p>
             </div>
           </div>
         </section>

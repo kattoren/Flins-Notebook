@@ -43,7 +43,9 @@ let dateField;
 let dateInput;
 let daysField;
 let daysContainer;
-let pickSoundBtn;
+let previewSoundBtn;
+let changeSoundBtn;
+let previewAudio = null;
 let playCountInput;
 let preAlertInput;
 let cancelBtn;
@@ -178,6 +180,30 @@ function updateConditionalFields() {
   const repeat = repeatSelect.value;
   dateField.classList.toggle('hidden', repeat !== 'once');
   daysField.classList.toggle('hidden', repeat !== 'weekly' && repeat !== 'custom');
+}
+
+async function previewReminderSound() {
+  try {
+    const dataUrl = await window.api.previewAlarm(formSoundPath);
+    if (!dataUrl) return;
+    const settings = await window.api.settingsGet();
+    if (previewAudio) {
+      previewAudio.pause();
+      previewAudio = null;
+    }
+    previewAudio = new Audio(dataUrl);
+    previewAudio.volume = settings.volume ?? 1;
+    await previewAudio.play();
+  } catch (err) {
+    console.error('Preview alarm failed:', err);
+  }
+}
+
+async function changeReminderSound() {
+  const pickedPath = await window.api.pickAudio();
+  if (pickedPath) {
+    formSoundPath = pickedPath;
+  }
 }
 
 async function loadIcon(img) {
@@ -469,7 +495,8 @@ function initReminders() {
   dateInput = document.getElementById('reminder-date');
   daysField = document.getElementById('reminder-days-field');
   daysContainer = document.getElementById('reminder-days');
-  pickSoundBtn = document.getElementById('reminder-pick-sound');
+  previewSoundBtn = document.getElementById('reminder-preview-sound');
+  changeSoundBtn = document.getElementById('reminder-change-sound');
   playCountInput = document.getElementById('reminder-play-count');
   preAlertInput = document.getElementById('reminder-pre-alert');
   cancelBtn = document.getElementById('reminder-cancel');
@@ -495,11 +522,12 @@ function initReminders() {
 
   repeatSelect.addEventListener('change', updateConditionalFields);
 
-  pickSoundBtn.addEventListener('click', async () => {
-    const pickedPath = await window.api.pickAudio();
-    if (pickedPath) {
-      formSoundPath = pickedPath;
-    }
+  previewSoundBtn?.addEventListener('click', () => {
+    previewReminderSound();
+  });
+
+  changeSoundBtn?.addEventListener('click', () => {
+    changeReminderSound();
   });
 
   saveBtn.addEventListener('click', () => {
@@ -540,11 +568,15 @@ function initReminders() {
     deleteSelectedReminders().catch((err) => console.error('Bulk delete failed:', err));
   });
 
-  addFabBtn.addEventListener('click', () => {
-    dismissDisableMenu();
-    resetForm();
-    openForm();
-  });
+  if (addFabBtn) {
+    addFabBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dismissDisableMenu();
+      resetForm();
+      openForm();
+    });
+  }
 
   document.addEventListener('click', (e) => {
     if (!disableMenuEl) return;

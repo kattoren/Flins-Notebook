@@ -14,6 +14,7 @@ let levelEl;
 let progressFill;
 let progressFraction;
 let progressLabel;
+let affirmationEl;
 let listEl;
 
 async function loadIcon(img) {
@@ -70,6 +71,12 @@ function renderAchievementItem(achievement) {
   return item;
 }
 
+async function loadAffirmation() {
+  if (!affirmationEl) return;
+  const text = await window.api.getDailyAffirmation();
+  affirmationEl.textContent = text || '';
+}
+
 async function loadAchievements() {
   const achievements = await window.api.achievementsList();
   const sorted = [...achievements].sort((a, b) => b.completedAt - a.completedAt);
@@ -79,10 +86,11 @@ async function loadAchievements() {
 
   if (!sorted.length) {
     listEl.innerHTML = '<div class="home-empty">No achievements logged yet. Complete a task above!</div>';
-    return;
+  } else {
+    sorted.forEach((a) => listEl.appendChild(renderAchievementItem(a)));
   }
 
-  sorted.forEach((a) => listEl.appendChild(renderAchievementItem(a)));
+  await loadAffirmation();
 
   if (window.refreshHome) {
     window.refreshHome();
@@ -93,11 +101,22 @@ window.refreshAchievements = loadAchievements;
 
 async function logAchievement() {
   const name = nameInput.value.trim();
-  if (!name) return;
+  if (!name) {
+    nameInput.classList.add('achievement-input-empty');
+    nameInput.focus();
+    setTimeout(() => nameInput.classList.remove('achievement-input-empty'), 600);
+    return;
+  }
 
   await window.api.achievementsCreate({ name });
   nameInput.value = '';
   await loadAchievements();
+}
+
+function handleLogClick(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  logAchievement().catch((err) => console.error('Log achievement failed:', err));
 }
 
 function initAchievements() {
@@ -109,24 +128,28 @@ function initAchievements() {
   progressFill = document.getElementById('achievements-progress-fill');
   progressFraction = document.getElementById('achievements-progress-fraction');
   progressLabel = document.getElementById('achievements-progress-label');
+  affirmationEl = document.getElementById('achievements-affirmation');
   listEl = document.getElementById('achievements-list');
 
   if (!form || !nameInput || !logBtn || !listEl) {
-    throw new Error('Achievements: required elements missing');
+    console.error('Achievements: required elements missing');
+    return;
   }
 
   loadAchievementIcons(document.getElementById('view-achievements'));
 
-  logBtn.addEventListener('click', () => {
-    logAchievement().catch((err) => console.error('Log achievement failed:', err));
-  });
+  logBtn.addEventListener('click', handleLogClick);
+  logBtn.addEventListener('mousedown', (e) => e.stopPropagation());
 
   nameInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
+      e.stopPropagation();
       logAchievement().catch((err) => console.error('Log achievement failed:', err));
     }
   });
+
+  form.addEventListener('click', (e) => e.stopPropagation());
 
   loadAchievements().catch((err) => console.error('Load achievements failed:', err));
 }

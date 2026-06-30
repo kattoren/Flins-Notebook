@@ -44,7 +44,11 @@ contextBridge.exposeInMainWorld('petApi', {
     ipcRenderer.on('pet:formChanged', (_event, payload) => callback(payload));
   },
   onHop: (callback) => {
-    ipcRenderer.on('pet:hop', () => callback());
+    ipcRenderer.on('pet:hop', (_event, payload) => callback(payload));
+  },
+  resizeForContent: (payload) => ipcRenderer.invoke('pet:resizeForContent', payload),
+  onContentResized: (callback) => {
+    ipcRenderer.on('pet:contentResized', (_event, payload) => callback(payload));
   },
   notifyReady: () => ipcRenderer.invoke('pet:ready'),
 });

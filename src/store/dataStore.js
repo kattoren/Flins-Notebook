@@ -31,17 +31,26 @@ function createDefaultData(petImagePath) {
       petName: '',
       pinMessage: '',
       timerVisible: true,
+      timerPlayCount: 1,
+      timerSoundPath: '',
       petImage: petImagePath,
       petVoicelines: [],
       autoLaunch: false,
       volume: 1,
       voicelineVolume: 0.25,
       bookOpen: false,
+      dailyAffirmationDate: '',
+      dailyAffirmationKey: '',
+      lastAchievementLineKey: '',
     },
   };
 }
 
-function resolveDataFilePath(appPath, userDataPath) {
+function resolveDataFilePath(appPath, userDataPath, isPackaged) {
+  if (isPackaged) {
+    return path.join(userDataPath, 'data.json');
+  }
+
   const dataDir = path.join(appPath, 'data');
   const dataFilePath = path.join(dataDir, 'data.json');
   const legacyPath = path.join(userDataPath, 'data.json');
@@ -167,10 +176,10 @@ function createSettingsStore(store) {
   };
 }
 
-function initDataStore(appPath, userDataPath, petImagePath) {
+function initDataStore(appPath, userDataPath, petImagePath, isPackaged = false) {
   const defaults = createDefaultData(petImagePath);
   const { createJsonStore } = require('./jsonStore');
-  const dataFilePath = resolveDataFilePath(appPath, userDataPath);
+  const dataFilePath = resolveDataFilePath(appPath, userDataPath, isPackaged);
   const store = createJsonStore(dataFilePath, defaults);
 
   return {

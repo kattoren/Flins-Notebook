@@ -13,30 +13,19 @@ const {
 
 const levelNumberEl = document.getElementById('home-level');
 const totalEl = document.getElementById('home-total');
-const progressFill = document.getElementById('home-progress-fill');
-const progressFraction = document.getElementById('home-progress-fraction');
-const progressLabel = document.getElementById('home-progress-label');
 const upcomingEl = document.getElementById('home-upcoming');
 const recentEl = document.getElementById('home-recent');
 
 function renderProgress(info) {
   levelNumberEl.textContent = String(info.level);
   totalEl.textContent = String(info.total);
-  progressFill.style.width = `${Math.round(info.progress * 100)}%`;
-
-  if (info.isMax) {
-    progressFraction.textContent = 'MAX';
-    progressLabel.textContent = 'Max level reached — keep going!';
-  } else {
-    const currentInBand = info.total - (info.level > 0 ? window.AppShared.LEVEL_THRESHOLDS[info.level - 1] : 0);
-    const bandSize = info.nextThreshold - (info.level > 0 ? window.AppShared.LEVEL_THRESHOLDS[info.level - 1] : 0);
-    progressFraction.textContent = `${currentInBand} / ${bandSize}`;
-    progressLabel.textContent = `${info.untilNext} achievements until Level ${info.level + 1}`;
-  }
 }
 
 function renderUpcoming(reminders) {
-  const upcoming = getUpcomingToday(reminders);
+  const upcoming = getUpcomingToday(reminders)
+    .slice()
+    .sort((a, b) => a.time.localeCompare(b.time));
+  const nextId = upcoming[0]?.id;
   upcomingEl.innerHTML = '';
 
   if (!upcoming.length) {
@@ -46,7 +35,7 @@ function renderUpcoming(reminders) {
 
   upcoming.forEach((reminder) => {
     const row = document.createElement('div');
-    row.className = 'home-reminder-row';
+    row.className = `home-reminder-row${reminder.id === nextId ? ' is-next-up' : ''}`;
     row.innerHTML = `
       <span class="bullet" aria-hidden="true"></span>
       <span class="title">${escapeHtml(reminder.title)}</span>
@@ -57,7 +46,7 @@ function renderUpcoming(reminders) {
 }
 
 function renderRecent(achievements) {
-  const sorted = [...achievements].sort((a, b) => b.completedAt - a.completedAt).slice(0, 5);
+  const sorted = [...achievements].sort((a, b) => b.completedAt - a.completedAt).slice(0, 10);
   recentEl.innerHTML = '';
 
   if (!sorted.length) {
@@ -93,7 +82,7 @@ function initHome() {
     return;
   }
   window.refreshHome = loadHome;
-  loadHome();
+  loadHome().catch((err) => console.error('Load home failed:', err));
 }
 
 window.initHome = initHome;

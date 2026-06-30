@@ -1,17 +1,10 @@
-function formatRemaining(ms) {
-  const total = Math.max(0, Math.ceil(ms / 1000));
-  const minutes = Math.floor(total / 60);
-  const seconds = total % 60;
-  return `${minutes}:${String(seconds).padStart(2, '0')}`;
-}
-
 function createPetTimer(callbacks) {
-  const { onTick, onBreakStart, onPhaseEnd, onStop } = callbacks;
+  const { onTick, onBreakStart, onTimerComplete, onPhaseEnd, onStop } = callbacks;
   let timer = null;
   let state = null;
 
   function emitTick() {
-    if (!state) return;
+    if (!state) return 0;
     const remaining = state.endAt - Date.now();
     onTick({
       display: formatRemaining(remaining),
@@ -38,9 +31,25 @@ function createPetTimer(callbacks) {
   function handlePhaseComplete() {
     if (!state) return;
 
+    if (state.type === 'simple') {
+      onTimerComplete({ type: 'simple', phase: state.phase });
+      onPhaseEnd({ phase: state.phase });
+      stop();
+      return;
+    }
+
     if (state.type === 'pomodoro' && state.phase === 'work') {
+      state.cyclesCompleted += 1;
+      onTimerComplete({ type: 'pomodoro', phase: 'work' });
+
+      if (state.cyclesCompleted >= state.cyclesTotal) {
+        onPhaseEnd({ phase: 'work', completedAll: true });
+        stop();
+        return;
+      }
+
       state.phase = 'break';
-      state.endAt = Date.now() + state.breakMin * 60_000;
+      state.endAt = Date.now() + state.breakSec * 1000;
       onBreakStart();
       emitTick();
       return;
@@ -48,7 +57,7 @@ function createPetTimer(callbacks) {
 
     if (state.type === 'pomodoro' && state.phase === 'break') {
       state.phase = 'work';
-      state.endAt = Date.now() + state.workMin * 60_000;
+      state.endAt = Date.now() + state.workSec * 1000;
       onPhaseEnd({ phase: 'break' });
       emitTick();
       return;
@@ -69,26 +78,29 @@ function createPetTimer(callbacks) {
     }, 1000);
   }
 
-  function startSimple(minutes) {
-    const mins = Math.max(1, Math.round(Number(minutes) || 1));
+  function startSimple(totalSeconds) {
+    const secs = Math.max(1, Math.round(Number(totalSeconds) || 1));
     state = {
       type: 'simple',
       phase: 'countdown',
-      endAt: Date.now() + mins * 60_000,
+      endAt: Date.now() + secs * 1000,
     };
     startInterval();
     return state;
   }
 
-  function startPomodoro(workMinutes, breakMinutes) {
-    const workMin = Math.max(1, Math.round(Number(workMinutes) || 25));
-    const breakMin = Math.max(1, Math.round(Number(breakMinutes) || 5));
+  function startPomodoro(workSeconds, breakSeconds, cycles = 4) {
+    const workSec = Math.max(1, Math.round(Number(workSeconds) || 25 * 60));
+    const breakSec = Math.max(1, Math.round(Number(breakSeconds) || 5 * 60));
+    const cycleCount = Math.max(1, Math.round(Number(cycles) || 1));
     state = {
       type: 'pomodoro',
       phase: 'work',
-      workMin,
-      breakMin,
-      endAt: Date.now() + workMin * 60_000,
+      workSec,
+      breakSec,
+      cyclesTotal: cycleCount,
+      cyclesCompleted: 0,
+      endAt: Date.now() + workSec * 1000,
     };
     startInterval();
     return state;
@@ -110,6 +122,19 @@ function createPetTimer(callbacks) {
     getState,
     formatRemaining,
   };
+}
+
+function formatRemaining(ms) {
+  const total = Math.max(0, Math.ceil(ms / 1000));
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  const seconds = total % 60;
+  const mm = String(minutes).padStart(2, '0');
+  const ss = String(seconds).padStart(2, '0');
+  if (hours > 0) {
+    return `${hours}:${mm}:${ss}`;
+  }
+  return `${minutes}:${ss}`;
 }
 
 module.exports = { createPetTimer, formatRemaining };

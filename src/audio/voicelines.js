@@ -54,13 +54,28 @@ function getGreetingVoiceline() {
   return fs.existsSync(GREETING_VOICELINE) ? GREETING_VOICELINE : null;
 }
 
+let lastChatVoicelinePath = null;
+
+function pickRandomChatFile(files) {
+  if (!files.length) return null;
+  if (files.length === 1) return files[0];
+  let pick = files[Math.floor(Math.random() * files.length)];
+  let guard = 0;
+  while (pick === lastChatVoicelinePath && guard < 16) {
+    pick = files[Math.floor(Math.random() * files.length)];
+    guard += 1;
+  }
+  lastChatVoicelinePath = pick;
+  return pick;
+}
+
 function getRandomChatVoiceline() {
   const chats = [
     ...listVoicelines('flins_chat_'),
     ...listVoicelines('oya_'),
   ];
-  if (!chats.length) return null;
-  const filePath = chats[Math.floor(Math.random() * chats.length)];
+  const filePath = pickRandomChatFile(chats);
+  if (!filePath) return null;
   return getVoicelinePayload(filePath);
 }
 

@@ -4,16 +4,24 @@ function getPetName(settings) {
 }
 
 function formatReminderSpeech(settings, reminder, timeLabel) {
-  const time = timeLabel || reminder.time;
-  return `${getPetName(settings)}, ${reminder.title}, ${time}`;
+  const time = timeLabel || formatTime12From24(reminder.time);
+  return `${getPetName(settings)}, ${reminder.title}, ${time} now!`;
 }
 
 function formatPreAlertSpeech(settings, reminder, minutes) {
-  return `${getPetName(settings)}, ${reminder.title} in ${minutes} minutes`;
+  return `${getPetName(settings)}, ${reminder.title} in ${minutes} minutes!`;
 }
 
 function formatBreakSpeech(settings) {
-  return `${getPetName(settings)}, it's break time!`;
+  return `Break time, ${getPetName(settings)}!`;
+}
+
+function formatPomodoroWorkTitle(settings) {
+  return `Time to work, ${getPetName(settings)}!`;
+}
+
+function formatPomodoroBreakTitle(settings) {
+  return `Break time, ${getPetName(settings)}!`;
 }
 
 function formatTime12From24(time24) {
@@ -28,5 +36,7 @@ module.exports = {
   formatReminderSpeech,
   formatPreAlertSpeech,
   formatBreakSpeech,
+  formatPomodoroWorkTitle,
+  formatPomodoroBreakTitle,
   formatTime12From24,
 };

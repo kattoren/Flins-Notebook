@@ -7,11 +7,14 @@ const { registerDataIpc } = require('./ipc/dataHandlers');
 const { startScheduler } = require('./scheduler/scheduler');
 const { readAudioAsDataUrl, resolveSoundPath } = require('./scheduler/audioHelper');
 const { getGreetingVoiceline, getRandomChatVoiceline, getVoicelinePayload } = require('./audio/voicelines');
+const { getLevelUpLine, pickAchievementLine, pickDailyAffirmation } = require('./audio/flinsLines');
+const { getLevelInfo } = require('./levels');
 const { createPetTimer, formatRemaining } = require('./pet/petTimer');
 const {
   formatReminderSpeech,
   formatPreAlertSpeech,
-  formatBreakSpeech,
+  formatPomodoroWorkTitle,
+  formatPomodoroBreakTitle,
   formatTime12From24,
 } = require('./pet/petSpeak');
 
@@ -25,6 +28,7 @@ const PET_FORM_ASSETS = {
   sticker: 'flins_idle.png',
 };
 const DEFAULT_ALARM = path.join(__dirname, 'audio', 'alarm', 'alarm_columbina_end.mp3');
+const LEVEL_UP_SFX = path.join(__dirname, 'audio', 'sound effects', 'sfx_level up.mp3');
 const PET_MAX_SIZE = 240;
 const PET_BUBBLE_GAP = 32;
 const PET_BUBBLE_MAX_HEIGHT = 360;
@@ -34,18 +38,24 @@ const { getBookWindowSize } = require('./bookLayout');
 
 let mainWindow = null;
 let petWindow = null;
+let petPanelWindow = null;
+let petPanelReady = false;
+let pendingPetPanelOpen = null;
 let tray = null;
 let dataStore = null;
 let petAlwaysOnTop = true;
 let isQuitting = false;
 let petWidth = 0;
 let petHeight = 0;
+let idleBubbleWidth = PET_MAX_SIZE;
+let currentBubbleArea = PET_BUBBLE_AREA;
 let audioWindow = null;
 let stopScheduler = null;
 let hasPlayedStartupGreeting = false;
 let pendingSummonGreeting = false;
 let petDrag = null;
 let petTimer = null;
+let appRootPath = null;
 
 const gotSingleInstanceLock = app.requestSingleInstanceLock();
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
@@ -57,26 +67,44 @@ if (!gotSingleInstanceLock) {
   });
 
   app.whenReady().then(() => {
-    if (process.platform === 'win32') {
-      app.setAppUserModelId('com.flins.notes');
+    try {
+      if (process.platform === 'win32') {
+        app.setAppUserModelId('com.flins.notes');
+      }
+
+      const appPath = path.join(__dirname, '..');
+      appRootPath = appPath;
+      dataStore = initDataStore(appPath, app.getPath('userData'), PET_IDLE_IMAGE, app.isPackaged);
+      refreshIdleBubbleWidth();
+      registerDataIpc(dataStore, () => mainWindow, {
+        onAchievementCreated: handleAchievementCreated,
+      });
+      initPetTimer();
+
+      Menu.setApplicationMenu(null);
+      createTray();
+      createMainWindow();
+      try {
+        createPetWindow();
+      } catch (err) {
+        console.error('Failed to create pet window:', err);
+      }
+      startReminderScheduler();
+
+      app.on('activate', () => {
+        showMainWindow();
+      });
+    } catch (err) {
+      console.error('Startup failed:', err);
+      app.quit();
     }
-
-    const appPath = path.join(__dirname, '..');
-    appRootPath = appPath;
-    dataStore = initDataStore(appPath, app.getPath('userData'), PET_IDLE_IMAGE);
-    registerDataIpc(dataStore, () => mainWindow);
-    initPetTimer();
-
-    Menu.setApplicationMenu(null);
-    createTray();
-    createMainWindow();
-    createPetWindow();
-    startReminderScheduler();
-
-    app.on('activate', () => {
-      showMainWindow();
-    });
+  }).catch((err) => {
+    console.error('whenReady failed:', err);
   });
+}
+
+function getAppRootPath() {
+  return appRootPath || path.join(__dirname, '..');
 }
 
 function getAppIcon() {
@@ -140,29 +168,42 @@ function getPetFormImageSrc(form = getPetForm()) {
   return pathToFileURL(resolvePetFormAsset(form)).href;
 }
 
-function applyPetWindowSize(imagePath) {
+function applyPetWindowSize(imagePath, form = getPetForm()) {
   const { width: imageWidth, height: imageHeight } = getPetAssetDimensions(imagePath);
-  const size = scalePetSize(imageWidth, imageHeight);
+  const size = scalePetSize(imageWidth, imageHeight, form);
   petWidth = size.width;
   petHeight = size.height;
-  const winH = getPetWindowHeight();
+  const layout = getPetWindowLayout(currentBubbleArea);
+  const winH = layout.height;
+  const winW = layout.width;
 
   if (!petWindow || petWindow.isDestroyed()) {
-    return { width: petWidth, height: petHeight, windowHeight: winH };
+    return {
+      width: petWidth,
+      height: petHeight,
+      windowWidth: winW,
+      windowHeight: winH,
+      bubbleWidth: idleBubbleWidth,
+    };
   }
 
-  if (petWidth > 0 && winH > 0) {
-    lockPetWindowSize(petWindow, petWidth, winH);
-  }
-  return { width: petWidth, height: petHeight, windowHeight: winH };
+  repositionPetWindow(currentBubbleArea);
+  return {
+    width: petWidth,
+    height: petHeight,
+    windowWidth: winW,
+    windowHeight: winH,
+    bubbleWidth: idleBubbleWidth,
+  };
 }
 
 function notifyPetFormChanged(form = getPetForm()) {
   const assetPath = resolvePetFormAsset(form);
-  const dims = applyPetWindowSize(assetPath);
+  const dims = applyPetWindowSize(assetPath, form);
   sendToPetWindow('pet:formChanged', {
     form,
     imageSrc: pathToFileURL(assetPath).href,
+    bubbleWidth: idleBubbleWidth,
     ...dims,
   });
 }
@@ -179,27 +220,67 @@ function resolvePetImageSrc(spriteFileName) {
   return pathToFileURL(resolved).href;
 }
 
-function scalePetSize(imageWidth, imageHeight) {
+function scalePetSize(imageWidth, imageHeight, form = getPetForm()) {
   if (!imageWidth || !imageHeight) {
     return { width: PET_MAX_SIZE, height: PET_MAX_SIZE };
   }
-  const scale = Math.min(PET_MAX_SIZE / imageWidth, PET_MAX_SIZE / imageHeight);
+  let scale = Math.min(PET_MAX_SIZE / imageWidth, PET_MAX_SIZE / imageHeight);
+  if (form === 'lantern') {
+    scale *= 0.4;
+  }
   return {
     width: Math.max(1, Math.round(imageWidth * scale)),
     height: Math.max(1, Math.round(imageHeight * scale)),
   };
 }
 
-function getPetWindowHeight() {
-  return petHeight + PET_BUBBLE_AREA;
+function refreshIdleBubbleWidth() {
+  const { width, height } = getPetAssetDimensions(PET_IDLE_IMAGE);
+  idleBubbleWidth = scalePetSize(width, height, 'sticker').width;
 }
 
-function getDefaultPetPosition(width, height) {
+function getIdleReferenceDims() {
+  const { width, height } = getPetAssetDimensions(PET_IDLE_IMAGE);
+  return scalePetSize(width, height, 'sticker');
+}
+
+function getPetWindowWidth() {
+  return Math.max(petWidth, idleBubbleWidth);
+}
+
+function getPetWindowHeight(bubbleArea = currentBubbleArea) {
+  return petHeight + bubbleArea;
+}
+
+function getIdleAnchorCenter() {
+  const idleDims = getIdleReferenceDims();
+  const idleWinW = Math.max(idleDims.width, idleBubbleWidth);
+  const idleWinH = idleDims.height + PET_BUBBLE_AREA;
   const { workArea } = screen.getPrimaryDisplay();
+  const winX = workArea.x + workArea.width - idleWinW;
+  const winY = workArea.y + workArea.height - idleWinH;
   return {
-    x: workArea.x + workArea.width - width,
-    y: workArea.y + workArea.height - height,
+    x: winX + idleWinW / 2,
+    y: winY + idleWinH - idleDims.height / 2,
   };
+}
+
+function getPetWindowLayout(bubbleArea = currentBubbleArea) {
+  const anchor = getIdleAnchorCenter();
+  const width = getPetWindowWidth();
+  const height = getPetWindowHeight(bubbleArea);
+  const x = Math.round(anchor.x - width / 2);
+  const y = Math.round(anchor.y - height + petHeight / 2);
+  return { x, y, width, height, bubbleArea };
+}
+
+function repositionPetWindow(bubbleArea = currentBubbleArea) {
+  if (!petWindow || petWindow.isDestroyed()) return;
+  currentBubbleArea = bubbleArea;
+  const layout = getPetWindowLayout(bubbleArea);
+  lockPetWindowSize(petWindow, layout.width, layout.height);
+  petWindow.setPosition(layout.x, layout.y);
+  return layout;
 }
 
 function lockPetWindowSize(win, width, height) {
@@ -237,10 +318,49 @@ function setPetAlwaysOnTop(enabled) {
   }
 }
 
-function speakPetMessage(text, { hop = false } = {}) {
+function speakPetMessage(text, { hops = 1, autoDismissMs = 0 } = {}) {
   if (!isPetVisible() || !text) return;
-  if (hop) sendPetHop();
-  sendToPetWindow('pet:speak', { text });
+  sendToPetWindow('pet:speak', { text, hops, autoDismissMs });
+}
+
+function playLevelUpSfx() {
+  if (!fs.existsSync(LEVEL_UP_SFX)) return;
+  const settings = dataStore.settings.get();
+  const dataUrl = readAudioAsDataUrl(LEVEL_UP_SFX);
+  const volume = settings.volume ?? 1;
+  sendToAudioTarget('play-audio', { dataUrl, volume, playCount: 1 });
+}
+
+function handleAchievementCreated({ beforeCount, afterCount }) {
+  if (!dataStore) return;
+
+  const levelBefore = getLevelInfo(beforeCount).level;
+  const levelAfter = getLevelInfo(afterCount).level;
+
+  if (levelAfter > levelBefore) {
+    playLevelUpSfx();
+    speakPetMessage(getLevelUpLine(levelAfter), { hops: 3, autoDismissMs: 30000 });
+    return;
+  }
+
+  const settings = dataStore.settings.get();
+  const { key, text } = pickAchievementLine(settings.lastAchievementLineKey || null);
+  if (key) {
+    dataStore.settings.update({ lastAchievementLineKey: key });
+  }
+  speakPetMessage(text, { hops: 1, autoDismissMs: 10000 });
+}
+
+function getDailyAffirmationText() {
+  const settings = dataStore.settings.get();
+  const picked = pickDailyAffirmation(settings);
+  if (picked.key && picked.date) {
+    dataStore.settings.update({
+      dailyAffirmationDate: picked.date,
+      dailyAffirmationKey: picked.key,
+    });
+  }
+  return picked.text || '';
 }
 
 function syncPinToPet() {
@@ -251,11 +371,27 @@ function syncPinToPet() {
 
 function pushTimerToPet(tick) {
   if (!dataStore) return;
-  const { timerVisible } = dataStore.settings.get();
+  const settings = dataStore.settings.get();
+  const { timerVisible } = settings;
+  let title = 'TIMER';
+  if (tick.type === 'pomodoro') {
+    title = tick.phase === 'break'
+      ? formatPomodoroBreakTitle(settings)
+      : formatPomodoroWorkTitle(settings);
+  }
   sendToPetWindow('pet:timerTick', {
     ...tick,
+    title,
     visible: timerVisible !== false,
   });
+}
+
+function endPetTimer() {
+  if (petTimer) {
+    petTimer.stop();
+  }
+  dataStore.settings.update({ timerVisible: false });
+  pushTimerToPet({ running: false, display: '0:00', phase: '', type: '' });
 }
 
 function getTimerTickPayload() {
@@ -275,37 +411,124 @@ function getTimerTickPayload() {
 function initPetTimer() {
   petTimer = createPetTimer({
     onTick: (tick) => pushTimerToPet(tick),
-    onBreakStart: () => {
-      const settings = dataStore.settings.get();
-      speakPetMessage(formatBreakSpeech(settings), { hop: true });
-      playDefaultAlarm();
+    onBreakStart: () => {},
+    onTimerComplete: () => {
+      playTimerAlarm();
     },
     onPhaseEnd: () => {},
     onStop: () => pushTimerToPet({ running: false, display: '0:00' }),
   });
 }
 
-function playDefaultAlarm() {
-  if (!fs.existsSync(DEFAULT_ALARM)) return;
+function playTimerAlarm() {
   const settings = dataStore.settings.get();
-  const dataUrl = readAudioAsDataUrl(DEFAULT_ALARM);
+  const soundPath = resolveSoundPath(settings.timerSoundPath, DEFAULT_ALARM);
+
+  if (!fs.existsSync(soundPath)) {
+    console.error('Timer alarm file not found:', soundPath);
+    return;
+  }
+
+  const dataUrl = readAudioAsDataUrl(soundPath);
+  const playCount = settings.timerPlayCount ?? 1;
   const volume = settings.volume ?? 1;
-  sendToAudioTarget('play-audio', { dataUrl, volume, playCount: 1 });
-  sendToAudioTarget('pet:react');
+
+  sendToAudioTarget('play-audio', { dataUrl, volume, playCount });
+  if (isPetVisible()) {
+    sendToAudioTarget('pet:react');
+  }
+}
+
+function playDefaultAlarm() {
+  playTimerAlarm();
+}
+
+
+function flushPendingPetPanelOpen() {
+  if (!petPanelReady || !pendingPetPanelOpen || !petPanelWindow || petPanelWindow.isDestroyed()) {
+    return;
+  }
+  sendToWindow(petPanelWindow, 'pet:openPanel', pendingPetPanelOpen);
+  pendingPetPanelOpen = null;
 }
 
 function openPetPanel(panel, extra = {}) {
-  if (petWindow && !petWindow.isDestroyed()) {
-    petWindow.setFocusable(true);
-    petWindow.focus();
+  createPetPanelWindow();
+  if (!petPanelWindow || petPanelWindow.isDestroyed()) return;
+
+  pendingPetPanelOpen = { panel, ...extra };
+
+  const showWindow = () => {
+    centerPetPanelWindow();
+    petPanelWindow.show();
+    petPanelWindow.focus();
+    flushPendingPetPanelOpen();
+  };
+
+  if (petPanelWindow.webContents.isLoading()) {
+    petPanelWindow.webContents.once('did-finish-load', showWindow);
+  } else {
+    showWindow();
   }
-  sendToPetWindow('pet:openPanel', { panel, ...extra });
+}
+
+function closePetPanelWindow() {
+  if (petPanelWindow && !petPanelWindow.isDestroyed()) {
+    petPanelWindow.hide();
+  }
+}
+
+function centerPetPanelWindow() {
+  if (!petPanelWindow || petPanelWindow.isDestroyed()) return;
+  const { workArea } = screen.getPrimaryDisplay();
+  const width = 440;
+  const height = 560;
+  const x = Math.round(workArea.x + (workArea.width - width) / 2);
+  const y = Math.round(workArea.y + (workArea.height - height) / 2);
+  petPanelWindow.setBounds({ x, y, width, height });
+}
+
+function createPetPanelWindow() {
+  if (petPanelWindow && !petPanelWindow.isDestroyed()) {
+    return petPanelWindow;
+  }
+
+  petPanelWindow = new BrowserWindow({
+    width: 440,
+    height: 560,
+    show: false,
+    frame: false,
+    transparent: true,
+    resizable: false,
+    skipTaskbar: true,
+    alwaysOnTop: true,
+    hasShadow: false,
+    backgroundColor: '#00000000',
+    webPreferences: {
+      preload: path.join(__dirname, 'pet-panel-preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+    },
+  });
+
+  petPanelReady = false;
+  petPanelWindow.webContents.on('did-start-loading', () => {
+    petPanelReady = false;
+  });
+
+  petPanelWindow.loadFile(path.join(__dirname, 'renderer', 'pet', 'petPanelShell.html'));
+
+  petPanelWindow.on('closed', () => {
+    petPanelWindow = null;
+    petPanelReady = false;
+    pendingPetPanelOpen = null;
+  });
+
+  return petPanelWindow;
 }
 
 function releasePetPanelFocus() {
-  if (petWindow && !petWindow.isDestroyed()) {
-    petWindow.setFocusable(false);
-  }
+  closePetPanelWindow();
 }
 
 function showPetTimer() {
@@ -321,19 +544,6 @@ function showPetContextMenu() {
 
   const menu = Menu.buildFromTemplate([
     {
-      label: 'Dismiss',
-      click: () => {
-        dismissPet();
-      },
-    },
-    {
-      label: 'Stay on top',
-      type: 'checkbox',
-      checked: petAlwaysOnTop,
-      click: (menuItem) => setPetAlwaysOnTop(menuItem.checked),
-    },
-    { type: 'separator' },
-    {
       label: 'Timer',
       click: () => openPetPanel('timer'),
     },
@@ -343,8 +553,9 @@ function showPetContextMenu() {
       click: () => showPetTimer(),
     },
     {
-      label: 'Set name',
-      click: () => openPetPanel('name', { name: settings.petName || '' }),
+      label: 'End timer',
+      enabled: timerRunning,
+      click: () => endPetTimer(),
     },
     {
       label: 'Pin message',
@@ -380,7 +591,25 @@ function showPetContextMenu() {
           checked: getPetForm() === 'sticker',
           click: () => setPetForm('sticker'),
         },
+        { type: 'separator' },
+        {
+          label: 'Set name',
+          click: () => openPetPanel('name', { name: settings.petName || '' }),
+        },
       ],
+    },
+    { type: 'separator' },
+    {
+      label: 'Dismiss',
+      click: () => {
+        dismissPet();
+      },
+    },
+    {
+      label: 'Stay on top ( ͡° ͜ʖ ͡°)',
+      type: 'checkbox',
+      checked: petAlwaysOnTop,
+      click: (menuItem) => setPetAlwaysOnTop(menuItem.checked),
     },
     { type: 'separator' },
     {
@@ -488,15 +717,13 @@ function summonPet() {
 
 function showSummonedPet() {
   notifyPetFormChanged(getPetForm());
-  const winH = getPetWindowHeight();
-  const { x, y } = getDefaultPetPosition(petWidth, winH);
-  if (petWidth > 0 && winH > 0) {
-    lockPetWindowSize(petWindow, petWidth, winH);
+  const layout = repositionPetWindow(PET_BUBBLE_AREA);
+  if (layout && petWidth > 0 && layout.height > 0) {
+    lockPetWindowSize(petWindow, layout.width, layout.height);
+    petWindow.setPosition(layout.x, layout.y);
   }
-  petWindow.setPosition(x, y);
   petWindow.show();
   notifyPetVisibility(true);
-  sendPetHop();
   playGreetingVoiceline();
 }
 
@@ -590,6 +817,12 @@ function createMainWindow() {
   });
 
   mainWindow.loadFile(path.join(__dirname, 'renderer', 'global', 'index.html'));
+
+  if (!app.isPackaged) {
+    mainWindow.webContents.on('console-message', (_event, _level, message) => {
+      console.log('[book]', message);
+    });
+  }
 }
 
 function createAudioWindow() {
@@ -652,7 +885,6 @@ function announcePreAlert(reminder) {
   const settings = dataStore.settings.get();
   speakPetMessage(
     formatPreAlertSpeech(settings, reminder, reminder.preAlertMinutes),
-    { hop: true },
   );
 }
 
@@ -685,19 +917,20 @@ function startReminderScheduler() {
 }
 
 function createPetWindow() {
-  const imagePath = resolvePetFormAsset(getPetForm());
+  const form = getPetForm();
+  const imagePath = resolvePetFormAsset(form);
   const { width: imageWidth, height: imageHeight } = getPetAssetDimensions(imagePath);
-  const size = scalePetSize(imageWidth, imageHeight);
+  const size = scalePetSize(imageWidth, imageHeight, form);
   petWidth = size.width;
   petHeight = size.height;
-  const winH = getPetWindowHeight();
-  const { x, y } = getDefaultPetPosition(petWidth, winH);
+  currentBubbleArea = PET_BUBBLE_AREA;
+  const layout = getPetWindowLayout(PET_BUBBLE_AREA);
 
   petWindow = new BrowserWindow({
-    width: petWidth,
-    height: winH,
-    x,
-    y,
+    width: layout.width,
+    height: layout.height,
+    x: layout.x,
+    y: layout.y,
     title: '',
     useContentSize: true,
     transparent: true,
@@ -721,13 +954,28 @@ function createPetWindow() {
 
   configurePetWindow(petWindow);
 
-  lockPetWindowSize(petWindow, petWidth, winH);
+  lockPetWindowSize(petWindow, layout.width, layout.height);
   petWindow.webContents.setVisualZoomLevelLimits(1, 1);
   setPetAlwaysOnTop(true);
   petWindow.loadFile(path.join(__dirname, 'renderer', 'pet', 'pet.html'));
 
+  petWindow.webContents.on('did-finish-load', () => {
+    if (petWindow && !petWindow.isDestroyed() && !petWindow.isVisible()) {
+      const nextLayout = repositionPetWindow(PET_BUBBLE_AREA);
+      lockPetWindowSize(petWindow, nextLayout.width, nextLayout.height);
+      petWindow.show();
+      notifyPetVisibility(true);
+      notifyPetFormChanged(getPetForm());
+    }
+  });
+
+  petWindow.webContents.on('did-fail-load', (_event, code, desc) => {
+    console.error('Pet window failed to load:', code, desc);
+  });
+
   petWindow.once('ready-to-show', () => {
-    lockPetWindowSize(petWindow, petWidth, winH);
+    const nextLayout = repositionPetWindow(PET_BUBBLE_AREA);
+    lockPetWindowSize(petWindow, nextLayout.width, nextLayout.height);
     petWindow.show();
     notifyPetVisibility(true);
     notifyPetFormChanged(getPetForm());
@@ -747,6 +995,9 @@ function quitApp() {
   }
   if (petWindow && !petWindow.isDestroyed()) {
     petWindow.destroy();
+  }
+  if (petPanelWindow && !petPanelWindow.isDestroyed()) {
+    petPanelWindow.destroy();
   }
   if (audioWindow && !audioWindow.isDestroyed()) {
     audioWindow.destroy();
@@ -787,12 +1038,53 @@ ipcMain.handle('pet:getPetForm', () => getPetForm());
 
 ipcMain.handle('pet:getImageSrc', () => getPetFormImageSrc());
 
-ipcMain.handle('pet:getDimensions', () => ({
-  width: petWidth,
-  height: petHeight,
-  bubbleArea: PET_BUBBLE_AREA,
-  windowHeight: getPetWindowHeight(),
-}));
+ipcMain.handle('pet:getDimensions', () => {
+  const layout = getPetWindowLayout(currentBubbleArea);
+  return {
+    width: petWidth,
+    height: petHeight,
+    bubbleWidth: idleBubbleWidth,
+    bubbleArea: currentBubbleArea,
+    windowWidth: layout.width,
+    windowHeight: layout.height,
+  };
+});
+
+ipcMain.handle('pet:resizeForContent', (_event, { bubbleArea }) => {
+  if (!petWindow || petWindow.isDestroyed()) return null;
+  const nextArea = Math.max(
+    PET_BUBBLE_GAP + 48,
+    Math.min(Number(bubbleArea) || PET_BUBBLE_AREA, 720),
+  );
+  currentBubbleArea = nextArea;
+  const width = getPetWindowWidth();
+  const newHeight = getPetWindowHeight(nextArea);
+  const [x, y] = petWindow.getPosition();
+  const [, oldH] = petWindow.getContentSize();
+  const bottom = y + oldH;
+  const newY = Math.round(bottom - newHeight);
+  lockPetWindowSize(petWindow, width, newHeight);
+  petWindow.setPosition(x, newY);
+  sendToPetWindow('pet:contentResized', {
+    windowWidth: width,
+    windowHeight: newHeight,
+    bubbleArea: nextArea,
+  });
+  return { x, y: newY, width, height: newHeight, bubbleArea: nextArea };
+});
+
+ipcMain.handle('pet:getTimerDefaults', () => {
+  const settings = dataStore.settings.get();
+  return {
+    soundPath: settings.timerSoundPath || '',
+    playCount: settings.timerPlayCount ?? 1,
+  };
+});
+
+ipcMain.handle('pet:panelReady', () => {
+  petPanelReady = true;
+  flushPendingPetPanelOpen();
+});
 
 ipcMain.handle('pet:getPosition', () => {
   if (!petWindow) return { x: 0, y: 0 };
@@ -880,12 +1172,17 @@ ipcMain.handle('pet:submitPanel', (_event, payload) => {
   }
 
   if (payload.panel === 'timer') {
+    dataStore.settings.update({
+      timerSoundPath: payload.soundPath || '',
+      timerPlayCount: payload.playCount ?? 1,
+    });
     if (payload.type === 'pomodoro') {
-      petTimer.startPomodoro(payload.workMin, payload.breakMin);
+      petTimer.startPomodoro(payload.workSeconds, payload.breakSeconds, payload.cycles);
     } else {
-      petTimer.startSimple(payload.minutes);
+      petTimer.startSimple(payload.totalSeconds);
     }
     dataStore.settings.update({ timerVisible: true });
+    pushTimerToPet(getTimerTickPayload());
     releasePetPanelFocus();
     return;
   }
@@ -907,6 +1204,8 @@ ipcMain.handle('pet:panelClosed', () => {
   releasePetPanelFocus();
 });
 
+ipcMain.handle('flins:getDailyAffirmation', () => getDailyAffirmationText());
+
 ipcMain.handle('voiceline:setVolume', (_event, volume) => {
   const clamped = Math.min(1, Math.max(0, Number(volume) || 0));
   dataStore.settings.update({ voicelineVolume: clamped });
@@ -916,13 +1215,13 @@ ipcMain.handle('voiceline:setVolume', (_event, volume) => {
 
 ipcMain.handle('audio:getSfxUrl', (_event, filename) => {
   const safeName = path.basename(filename);
-  const fullPath = path.join(appRootPath, 'src', 'audio', 'sound effects', safeName);
+  const fullPath = path.join(getAppRootPath(), 'src', 'audio', 'sound effects', safeName);
   return pathToFileURL(fullPath).href;
 });
 
 ipcMain.handle('ui:getAssetUrl', (_event, relativePath) => {
   const safePath = path.normalize(relativePath).replace(/^(\.\.(\/|\\|$))+/, '');
-  const fullPath = path.join(appRootPath, 'assets', 'ui', safePath);
+  const fullPath = path.join(getAppRootPath(), 'assets', 'ui', safePath);
   return pathToFileURL(fullPath).href;
 });
 
@@ -930,7 +1229,11 @@ ipcMain.handle('book:getOpen', () => dataStore.settings.get().bookOpen ?? false)
 
 ipcMain.handle('book:setOpen', (_event, open) => {
   const isOpen = Boolean(open);
-  dataStore.settings.update({ bookOpen: isOpen });
+  try {
+    dataStore.settings.update({ bookOpen: isOpen });
+  } catch (err) {
+    console.error('Failed to save book open state:', err);
+  }
   resizeMainWindowForBook(isOpen);
   return isOpen;
 });
@@ -940,3 +1243,9 @@ ipcMain.handle('app:quit', () => {
 });
 
 ipcMain.handle('audio:getDefaultAlarmLabel', () => 'Columbina alarm (default)');
+
+ipcMain.handle('audio:getAlarmPreviewUrl', (_event, soundPath) => {
+  const soundFile = resolveSoundPath(soundPath || '', DEFAULT_ALARM);
+  if (!fs.existsSync(soundFile)) return null;
+  return readAudioAsDataUrl(soundFile);
+});

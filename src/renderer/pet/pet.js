@@ -8,9 +8,9 @@ const speechText = document.getElementById('speech-text');
 const pinBubble = document.getElementById('pin-bubble');
 const pinText = document.getElementById('pin-text');
 const timerBubble = document.getElementById('timer-bubble');
-const timerLabel = document.getElementById('timer-label');
 const timerDisplay = document.getElementById('timer-display');
 const timerCloseBtn = document.getElementById('timer-close');
+const speechCloseBtn = document.getElementById('speech-close');
 
 let formBaseSrc = '';
 let petForm = 'gif';
@@ -22,6 +22,17 @@ let pendingDragPos = null;
 let hopTimer = null;
 let timerRunning = false;
 let timerVisible = true;
+let bubbleWidthPx = null;
+let speechDismissTimer = null;
+let layoutDims = null;
+
+function applyBubbleWidth(width) {
+  if (!width) return;
+  bubbleWidthPx = width;
+  document.documentElement.style.setProperty('--pet-bubble-width', `${width}px`);
+  bubblesColumn.style.width = `${width}px`;
+  bubblesColumn.style.maxWidth = `${width}px`;
+}
 
 function playHop() {
   flinsWrap.classList.remove('pet-hop');
@@ -34,31 +45,49 @@ function playHop() {
   }, 450);
 }
 
-function applyFixedSize(width, height, windowHeight) {
-  const h = windowHeight || height;
+function playHops(count = 1) {
+  const total = Math.max(1, Math.min(6, Number(count) || 1));
+  for (let i = 0; i < total; i += 1) {
+    setTimeout(() => playHop(), i * 480);
+  }
+}
+
+function applyFixedSize(dims) {
+  layoutDims = dims;
+  const petW = dims.width;
+  const petH = dims.height;
+  const winW = dims.windowWidth || petW;
+  const winH = dims.windowHeight || petH;
   const stack = document.querySelector('.flins-stack');
-  document.documentElement.style.width = `${width}px`;
-  document.documentElement.style.height = `${h}px`;
-  document.body.style.width = `${width}px`;
-  document.body.style.height = `${h}px`;
-  document.getElementById('pet-root').style.width = `${width}px`;
-  document.getElementById('pet-root').style.height = `${h}px`;
-  stack.style.width = `${width}px`;
-  stack.style.height = `${height}px`;
-  flinsWrap.style.width = `${width}px`;
-  flinsWrap.style.height = `${height}px`;
-  img.style.width = `${width}px`;
-  img.style.height = `${height}px`;
-  bubblesColumn.style.width = `${width}px`;
+
+  document.documentElement.style.setProperty('--pet-height', `${petH}px`);
+  document.documentElement.style.width = `${winW}px`;
+  document.documentElement.style.height = `${winH}px`;
+  document.body.style.width = `${winW}px`;
+  document.body.style.height = `${winH}px`;
+  document.getElementById('pet-root').style.width = `${winW}px`;
+  document.getElementById('pet-root').style.height = `${winH}px`;
+  stack.style.width = `${winW}px`;
+  stack.style.height = `${petH}px`;
+  flinsWrap.style.width = `${petW}px`;
+  flinsWrap.style.height = `${petH}px`;
+  img.style.width = `${petW}px`;
+  img.style.height = `${petH}px`;
 }
 
 function applyPetForm(form, imageSrc, dims) {
   petForm = form;
   formBaseSrc = imageSrc;
-  flinsWrap.classList.toggle('pet-form-lantern', form === 'lantern');
+  const petRoot = document.getElementById('pet-root');
+  const isLantern = form === 'lantern';
+  petRoot.classList.toggle('pet-form-lantern', isLantern);
+  flinsWrap.classList.toggle('pet-form-lantern', isLantern);
 
   if (dims) {
-    applyFixedSize(dims.width, dims.height, dims.windowHeight);
+    applyFixedSize(dims);
+  }
+  if (dims?.bubbleWidth) {
+    applyBubbleWidth(dims.bubbleWidth);
   }
 
   setPetSprite(imageSrc);
@@ -80,6 +109,7 @@ function resetToIdle() {
 
 function playVoiceline({ dataUrl, volume, text, imageSrc }) {
   const player = window.PetAudioPlayer;
+  playHop();
   showSpeechBubble(text);
   if (petForm === 'sticker') {
     setPetSprite(imageSrc);
@@ -90,13 +120,26 @@ function playVoiceline({ dataUrl, volume, text, imageSrc }) {
   });
 }
 
-function showSpeechBubble(text) {
+function showSpeechBubble(text, { autoDismissMs = 0 } = {}) {
+  if (speechDismissTimer) {
+    clearTimeout(speechDismissTimer);
+    speechDismissTimer = null;
+  }
+
   speechText.textContent = text || '';
   bubble.classList.remove('hidden');
   bubble.setAttribute('aria-hidden', 'false');
+
+  if (autoDismissMs > 0) {
+    speechDismissTimer = setTimeout(() => hideSpeechBubble(), autoDismissMs);
+  }
 }
 
 function hideSpeechBubble() {
+  if (speechDismissTimer) {
+    clearTimeout(speechDismissTimer);
+    speechDismissTimer = null;
+  }
   bubble.classList.add('hidden');
   bubble.setAttribute('aria-hidden', 'true');
   speechText.textContent = '';
@@ -115,13 +158,6 @@ function setPinMessage(text) {
   pinBubble.setAttribute('aria-hidden', 'false');
 }
 
-function phaseLabel(phase, type) {
-  if (type === 'pomodoro') {
-    return phase === 'break' ? 'Break' : 'Work';
-  }
-  return 'Timer';
-}
-
 function updateTimerBubble(payload) {
   timerRunning = Boolean(payload?.running);
   timerVisible = payload?.visible !== false;
@@ -132,8 +168,8 @@ function updateTimerBubble(payload) {
     return;
   }
 
-  timerLabel.textContent = phaseLabel(payload.phase, payload.type);
-  timerDisplay.textContent = payload.display || '0:00';
+  const title = payload.title || 'TIMER';
+  timerDisplay.textContent = `${title} ${payload.display || '0:00'}`;
   timerBubble.classList.remove('hidden');
   timerBubble.setAttribute('aria-hidden', 'false');
 }
@@ -151,7 +187,8 @@ function setupAudioListeners() {
   });
 
   window.petApi.onSpeak((payload) => {
-    showSpeechBubble(payload?.text || '');
+    playHops(payload?.hops ?? 1);
+    showSpeechBubble(payload?.text || '', { autoDismissMs: payload?.autoDismissMs || 0 });
   });
 
   window.petApi.onPinMessage((payload) => {
@@ -160,10 +197,6 @@ function setupAudioListeners() {
 
   window.petApi.onTimerTick((payload) => {
     updateTimerBubble(payload);
-  });
-
-  window.petApi.onOpenPanel((payload) => {
-    window.PetPanels.openPanel(payload.panel, payload);
   });
 
   window.petApi.onVoicelineVolumeChange((volume) => {
@@ -179,8 +212,8 @@ function setupAudioListeners() {
     playHop();
   });
 
-  window.petApi.onHop(() => {
-    playHop();
+  window.petApi.onHop((payload) => {
+    playHops(payload?.count ?? 1);
   });
 
   window.petApi.onFormChanged((payload) => {
@@ -196,6 +229,9 @@ async function init() {
   const imageSrc = await window.petApi.getImageSrc();
   const state = await window.petApi.getPetState();
   applyPetForm(form, imageSrc, dims);
+  if (dims.bubbleWidth) {
+    applyBubbleWidth(dims.bubbleWidth);
+  }
   setPinMessage(state.pinMessage);
   timerVisible = state.timerVisible !== false;
   if (state.timer) {
@@ -205,6 +241,11 @@ async function init() {
   timerCloseBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     window.petApi.hideTimer();
+  });
+
+  speechCloseBtn?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    hideSpeechBubble();
   });
 
   window.petApi.notifyReady();

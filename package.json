@@ -11,6 +11,7 @@
   "build": {
     "appId": "com.flins.notes",
     "productName": "Flins Notes",
+    "author": "Kattoren",
     "icon": "assets/flins/flins_idle.png",
     "directories": {
       "output": "release"

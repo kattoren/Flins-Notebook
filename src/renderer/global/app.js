@@ -91,8 +91,12 @@ function setBookShell(open) {
 
 async function openBook({ playSound = true } = {}) {
   collapseVolumeDrawer();
-  await window.api.setBookOpen(true);
   setBookShell(true);
+  try {
+    await window.api.setBookOpen(true);
+  } catch (err) {
+    console.error('Failed to save book open state:', err);
+  }
   if (playSound && window.BookSfx) {
     window.BookSfx.playBookOpen();
   }
@@ -104,8 +108,12 @@ async function closeBook({ playSound = true } = {}) {
   if (playSound && window.BookSfx) {
     window.BookSfx.playBookClose();
   }
-  await window.api.setBookOpen(false);
   setBookShell(false);
+  try {
+    await window.api.setBookOpen(false);
+  } catch (err) {
+    console.error('Failed to save book closed state:', err);
+  }
 }
 
 function updateMarkVisuals() {
@@ -216,12 +224,15 @@ function initNavigation() {
     });
   });
 
-  document.getElementById('mark-summon').addEventListener('click', () => {
-    collapseVolumeDrawer();
-    if (!document.getElementById('mark-summon').disabled) {
-      window.api.summonFlins();
-    }
-  });
+  const summonBtn = document.getElementById('mark-summon');
+  if (summonBtn) {
+    summonBtn.addEventListener('click', () => {
+      collapseVolumeDrawer();
+      if (!summonBtn.disabled) {
+        window.api.summonFlins();
+      }
+    });
+  }
 }
 
 function initVolumeControl() {
@@ -230,6 +241,10 @@ function initVolumeControl() {
   const drawer = document.getElementById('volume-drawer');
   const volumeBtn = document.getElementById('mark-volume');
 
+  if (!slider || !wrap || !drawer || !volumeBtn) {
+    console.error('Volume controls missing from page');
+    return;
+  }
   window.api.settingsGet()
     .then((settings) => {
       const volume = settings.voicelineVolume ?? 0.25;
@@ -262,24 +277,33 @@ function initVolumeControl() {
 }
 
 function initWindowControls() {
-  document.getElementById('win-minimize').addEventListener('click', () => {
+  const bind = (id, event, handler) => {
+    const el = document.getElementById(id);
+    if (!el) {
+      console.error(`Missing UI element: #${id}`);
+      return;
+    }
+    el.addEventListener(event, handler);
+  };
+
+  bind('win-minimize', 'click', () => {
     window.api.minimizeWindow();
   });
 
-  document.getElementById('win-close').addEventListener('click', async () => {
+  bind('win-close', 'click', async () => {
     await closeBook({ playSound: true });
     window.api.closeWindow();
   });
 
-  document.getElementById('mark-exit').addEventListener('click', () => {
+  bind('mark-exit', 'click', () => {
     window.api.quitApp();
   });
 
-  document.getElementById('close-book-fold').addEventListener('click', () => {
+  bind('close-book-fold', 'click', () => {
     closeBook({ playSound: true });
   });
 
-  document.getElementById('book-cover-open').addEventListener('click', () => {
+  bind('book-cover-open', 'click', () => {
     openBook({ playSound: true });
   });
 
@@ -324,22 +348,29 @@ async function bootstrap() {
     return;
   }
 
-  applyBookScale();
-  if (window.BookSfx) {
-    await window.BookSfx.preloadAll();
+  try {
+    applyBookScale();
+    if (window.BookSfx) {
+      await window.BookSfx.preloadAll().catch((err) => {
+        console.error('SFX preload failed:', err);
+      });
+    }
+    await initBookAssets();
+    await initBookState();
+
+    initWindowControls();
+    initVolumeControl();
+    initNavigation();
+    initMarkHover();
+    updateMarkStates();
+
+    runInit('home', () => window.initHome?.());
+    runInit('reminders', () => window.initReminders?.());
+    runInit('achievements', () => window.initAchievements?.());
+  } catch (err) {
+    console.error('Bootstrap failed:', err);
+    setBookShell(false);
   }
-  await initBookAssets();
-  await initBookState();
-
-  initWindowControls();
-  initVolumeControl();
-  initNavigation();
-  initMarkHover();
-  updateMarkStates();
-
-  runInit('home', () => window.initHome?.());
-  runInit('reminders', () => window.initReminders?.());
-  runInit('achievements', () => window.initAchievements?.());
 }
 
 if (document.readyState === 'loading') {
