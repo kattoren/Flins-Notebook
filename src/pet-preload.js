@@ -16,6 +16,9 @@ contextBridge.exposeInMainWorld('petApi', {
   onPlayVoiceline: (callback) => {
     ipcRenderer.on('play-voiceline', (_event, payload) => callback(payload));
   },
+  onPlayVoicelineSequence: (callback) => {
+    ipcRenderer.on('play-voiceline-sequence', (_event, payload) => callback(payload));
+  },
   onPlayAudio: (callback) => {
     ipcRenderer.on('play-audio', (_event, payload) => callback(payload));
   },

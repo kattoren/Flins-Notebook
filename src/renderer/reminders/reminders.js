@@ -9,6 +9,7 @@ const {
   DAY_SHORT,
   escapeHtml,
   formatDate,
+  formatDisplayDate,
   formatTime12,
   getRemindersForDay,
   isReminderActiveOnDay,
@@ -16,7 +17,7 @@ const {
 } = window.AppShared;
 
 const REPEAT_LABELS = {
-  once: 'Once',
+  once: 'One time',
   daily: 'Daily',
   weekdays: 'Weekdays',
   weekends: 'Weekends',
@@ -26,6 +27,7 @@ const REPEAT_LABELS = {
 
 let reminders = [];
 let listMode = 'day';
+let weekOffset = 0;
 let editingId = null;
 let formSoundPath = '';
 let selectionMode = false;
@@ -57,6 +59,8 @@ let bulkEditBtn;
 let bulkDeleteBtn;
 let addFabBtn;
 let formCloseBtn;
+let weekPrevBtn;
+let weekNextBtn;
 let disableMenuEl = null;
 
 function dismissDisableMenu() {
@@ -145,8 +149,8 @@ function showDisableMenu(reminder, occurrenceDate, anchorEl) {
 }
 
 function repeatSummary(reminder) {
-  if (reminder.repeat === 'once' && reminder.date) {
-    return `Once on ${reminder.date}`;
+  if (reminder.repeat === 'once') {
+    return REPEAT_LABELS.once;
   }
   if (reminder.repeat === 'weekly' || reminder.repeat === 'custom') {
     const days = reminder.days.map((d) => DAY_SHORT[d]).join(', ');
@@ -371,13 +375,27 @@ function renderReminderRow(reminder, occurrenceDate) {
   return row;
 }
 
+function getWeekReferenceDate() {
+  const date = new Date();
+  date.setHours(0, 0, 0, 0);
+  date.setDate(date.getDate() + weekOffset * 7);
+  return date;
+}
+
+function updateWeekNavVisibility() {
+  const show = listMode === 'week';
+  weekPrevBtn?.classList.toggle('hidden', !show);
+  weekNextBtn?.classList.toggle('hidden', !show);
+}
+
 function renderDayView() {
   const today = new Date();
   const todays = getRemindersForDay(reminders, today);
   const headingEl = document.getElementById('reminders-list-heading');
   if (headingEl) {
-    headingEl.textContent = `Today — ${DAY_NAMES[today.getDay()]}, ${formatDate(today)}`;
+    headingEl.textContent = `Today — ${DAY_NAMES[today.getDay()]}, ${formatDisplayDate(today)}`;
   }
+  updateWeekNavVisibility();
   listPanel.innerHTML = '';
 
   if (!todays.length) {
@@ -389,11 +407,18 @@ function renderDayView() {
 }
 
 function renderWeekView() {
-  const weekDates = getWeekDates(new Date());
+  const weekDates = getWeekDates(getWeekReferenceDate());
   const headingEl = document.getElementById('reminders-list-heading');
   if (headingEl) {
-    headingEl.textContent = 'This Week';
+    if (weekOffset === 0) {
+      headingEl.textContent = 'This Week';
+    } else {
+      const start = weekDates[0];
+      const end = weekDates[6];
+      headingEl.textContent = `${formatDisplayDate(start)} – ${formatDisplayDate(end)}`;
+    }
   }
+  updateWeekNavVisibility();
   listPanel.innerHTML = '';
 
   weekDates.forEach((date) => {
@@ -403,7 +428,7 @@ function renderWeekView() {
 
     const heading = document.createElement('h4');
     heading.className = 'book-week-heading';
-    heading.textContent = `${DAY_NAMES[date.getDay()]} — ${formatDate(date)}`;
+    heading.textContent = `${DAY_NAMES[date.getDay()]} — ${formatDisplayDate(date)}`;
     group.appendChild(heading);
 
     if (!dayReminders.length) {
@@ -504,6 +529,8 @@ function initReminders() {
   saveBtn = document.getElementById('reminder-save');
   dayViewBtn = document.getElementById('reminders-day-view');
   weekViewBtn = document.getElementById('reminders-week-view');
+  weekPrevBtn = document.getElementById('reminders-week-prev');
+  weekNextBtn = document.getElementById('reminders-week-next');
   bulkEditBtn = document.getElementById('reminders-bulk-edit');
   bulkDeleteBtn = document.getElementById('reminders-bulk-delete');
   addFabBtn = document.getElementById('reminder-add-fab');
@@ -550,6 +577,7 @@ function initReminders() {
 
   dayViewBtn.addEventListener('click', () => {
     listMode = 'day';
+    weekOffset = 0;
     dayViewBtn.classList.add('active');
     weekViewBtn.classList.remove('active');
     renderList();
@@ -560,6 +588,18 @@ function initReminders() {
     weekViewBtn.classList.add('active');
     dayViewBtn.classList.remove('active');
     renderList();
+  });
+
+  weekPrevBtn?.addEventListener('click', () => {
+    if (listMode !== 'week') return;
+    weekOffset -= 1;
+    renderWeekView();
+  });
+
+  weekNextBtn?.addEventListener('click', () => {
+    if (listMode !== 'week') return;
+    weekOffset += 1;
+    renderWeekView();
   });
 
   bulkEditBtn.addEventListener('click', toggleSelectionMode);

@@ -120,6 +120,23 @@ function playVoiceline({ dataUrl, volume, text, imageSrc }) {
   });
 }
 
+async function playVoicelineSequence({ items }) {
+  const player = window.PetAudioPlayer;
+  const queue = Array.isArray(items) ? items : [];
+  if (!queue.length) return;
+
+  for (const item of queue) {
+    playHop();
+    showSpeechBubble(item.text || '');
+    if (petForm === 'sticker' && item.imageSrc) {
+      setPetSprite(item.imageSrc);
+    }
+    await player.playDataUrl(item.dataUrl, item.volume, { interrupt: true });
+  }
+
+  resetSpeechOnly();
+}
+
 function showSpeechBubble(text, { autoDismissMs = 0 } = {}) {
   if (speechDismissTimer) {
     clearTimeout(speechDismissTimer);
@@ -184,6 +201,10 @@ function setupAudioListeners() {
 
   window.petApi.onPlayVoiceline((payload) => {
     playVoiceline(payload);
+  });
+
+  window.petApi.onPlayVoicelineSequence((payload) => {
+    playVoicelineSequence(payload).catch(() => resetSpeechOnly());
   });
 
   window.petApi.onSpeak((payload) => {

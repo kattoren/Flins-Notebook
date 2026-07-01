@@ -1,5 +1,6 @@
 window.BookSfx = (function createBookSfx() {
   const cache = new Map();
+  const BOOK_SFX_VOLUME = 0.25;
 
   const FILES = {
     bookOpen: 'sfx_book_open.mp3',
@@ -17,7 +18,7 @@ window.BookSfx = (function createBookSfx() {
     try {
       const src = await resolve(file);
       const audio = new Audio(src);
-      audio.volume = 1;
+      audio.volume = BOOK_SFX_VOLUME;
       await audio.play();
     } catch {
       // ignore autoplay / missing file errors

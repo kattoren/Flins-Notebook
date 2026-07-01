@@ -5,13 +5,14 @@
   --book-open-shell-w: 1162px;
   --book-closed-shell-w: 581px;
   --book-shell-h: 780px;
-  --mark-w: 232px;
-  --mark-h: 96px;
-  --mark-gap: 12px;
+  --mark-w: 139.2px;
+  --mark-h: 57.6px;
+  --mark-gap: 60px;
+  --mark-stride: 60px;
   --mark-start: 145px;
   --mark-inset: 0px;
-  --mark-icon: 36.975px;
-  --mark-icon-left: 51px;
+  --mark-icon: 22.185px;
+  --mark-icon-left: 30.6px;
   --mark-vertical-w: 53.25px;
   --mark-vertical-h: 79px;
   --mark-vertical-crop: 50px;
@@ -52,6 +53,39 @@ body {
 
 body {
   font-family: 'Flins UI', 'Segoe UI', system-ui, sans-serif;
+}
+
+/* —— Book scrollbars —— */
+
+#book-open {
+  scrollbar-color: #c8c0b0 #e2ded4;
+  scrollbar-width: thin;
+}
+
+#book-open ::-webkit-scrollbar {
+  width: 14px;
+  height: 14px;
+}
+
+#book-open ::-webkit-scrollbar-track {
+  background: #e2ded4;
+}
+
+#book-open ::-webkit-scrollbar-thumb {
+  background: #c8c0b0;
+  border: 2px solid #e2ded4;
+}
+
+#book-open ::-webkit-scrollbar-button {
+  background: #c8c0b0;
+}
+
+#book-open ::-webkit-scrollbar-button:single-button {
+  background: #c8c0b0;
+}
+
+#book-open ::-webkit-scrollbar-corner {
+  background: #e2ded4;
 }
 
 .hidden {
@@ -156,7 +190,7 @@ body {
   position: absolute;
   left: var(--mark-inset);
   top: 0;
-  width: 290px;
+  width: 174px;
   height: 970px;
   z-index: 8;
   pointer-events: none;
@@ -168,14 +202,15 @@ body {
   width: var(--mark-w);
   height: var(--mark-h);
   display: block;
+  object-fit: fill;
 }
 
 .mark-bg-img[data-mark-for='home'] { top: var(--mark-start); }
-.mark-bg-img[data-mark-for='reminders'] { top: calc(var(--mark-start) + (var(--mark-h) + var(--mark-gap)) * 1); }
-.mark-bg-img[data-mark-for='achievements'] { top: calc(var(--mark-start) + (var(--mark-h) + var(--mark-gap)) * 2); }
-.mark-bg-img[data-mark-for='volume'] { top: calc(var(--mark-start) + (var(--mark-h) + var(--mark-gap)) * 3); }
-.mark-bg-img[data-mark-for='summon'] { top: calc(var(--mark-start) + (var(--mark-h) + var(--mark-gap)) * 4); }
-.mark-bg-img[data-mark-for='exit'] { top: calc(var(--mark-start) + (var(--mark-h) + var(--mark-gap)) * 5); }
+.mark-bg-img[data-mark-for='reminders'] { top: calc(var(--mark-start) + var(--mark-stride)); }
+.mark-bg-img[data-mark-for='achievements'] { top: calc(var(--mark-start) + var(--mark-stride) * 2); }
+.mark-bg-img[data-mark-for='volume'] { top: calc(var(--mark-start) + var(--mark-stride) * 3); }
+.mark-bg-img[data-mark-for='summon'] { top: calc(var(--mark-start) + var(--mark-stride) * 4); }
+.mark-bg-img[data-mark-for='exit'] { top: calc(var(--mark-start) + var(--mark-stride) * 5); }
 
 .mark-bg-img.mark-hover,
 .win-mark-bg-img.mark-hover {
@@ -188,7 +223,7 @@ body {
   position: absolute;
   left: var(--mark-inset);
   top: 0;
-  width: 290px;
+  width: 174px;
   height: 970px;
   z-index: 35;
   pointer-events: none;
@@ -197,7 +232,7 @@ body {
 .book-mark {
   position: absolute;
   left: 0;
-  width: 120px;
+  width: var(--mark-w);
   height: var(--mark-h);
   border: none;
   padding: 0;
@@ -236,14 +271,15 @@ body {
 }
 
 #mark-home { top: var(--mark-start); }
-#mark-reminders { top: calc(var(--mark-start) + (var(--mark-h) + var(--mark-gap)) * 1); }
-#mark-achievements { top: calc(var(--mark-start) + (var(--mark-h) + var(--mark-gap)) * 2); }
+#mark-reminders { top: calc(var(--mark-start) + var(--mark-stride)); }
+#mark-achievements { top: calc(var(--mark-start) + var(--mark-stride) * 2); }
 
 .volume-mark-wrap {
   position: absolute;
   left: 0;
-  top: calc(var(--mark-start) + (var(--mark-h) + var(--mark-gap)) * 3);
+  top: calc(var(--mark-start) + var(--mark-stride) * 3);
   height: var(--mark-h);
+  min-width: var(--mark-w);
   display: flex;
   flex-direction: row-reverse;
   align-items: center;
@@ -290,11 +326,11 @@ body {
 }
 
 #mark-summon {
-  top: calc(var(--mark-start) + (var(--mark-h) + var(--mark-gap)) * 4);
+  top: calc(var(--mark-start) + var(--mark-stride) * 4);
 }
 
 #mark-exit {
-  top: calc(var(--mark-start) + (var(--mark-h) + var(--mark-gap)) * 5);
+  top: calc(var(--mark-start) + var(--mark-stride) * 5);
 }
 
 .close-book-fold {
@@ -352,9 +388,9 @@ body {
 
 .win-tab-btn {
   position: absolute;
-  top: 0;
+  top: 20;
   width: 55px;
-  height: calc(120px - var(--mark-vertical-crop));
+  height: calc(180px - var(--mark-vertical-crop));
   border: none;
   background: transparent;
   cursor: pointer;
@@ -464,11 +500,17 @@ body {
 }
 
 .home-reminder-row.is-next-up {
-  background: #f5e6a8;
+  color: #DDAF3C;
+  background: #DDAF3C;
+}
+
+.home-reminder-row.is-next-up .title,
+.home-reminder-row.is-next-up .time {
+  color: #E5E3DD;
 }
 
 .home-reminder-row.is-next-up .bullet {
-  background: #e8c84a;
+  background: #C69532;
 }
 
 .home-reminder-row .bullet {
@@ -480,12 +522,12 @@ body {
 
 .home-reminder-row .title {
   flex: 1;
-  font-size: 24px;
+  font-size: 19px;
   color: #6a5e59;
 }
 
 .home-reminder-row .time {
-  font-size: 24px;
+  font-size: 19px;
   color: #6a5e59;
 }
 
@@ -498,7 +540,7 @@ body {
 }
 
 .home-level-label {
-  font-size: 29px;
+  font-size: 19px;
   color: #6a5e59;
   margin-bottom: 8px;
 }
@@ -542,7 +584,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 26px;
+  font-size: 19px;
   color: #efeeec;
 }
 
@@ -589,15 +631,16 @@ body {
 }
 
 .home-recent-row .bullet {
-  width: 15px;
-  height: 17px;
+  width: 10px;
+  height: 10px;
   flex-shrink: 0;
+  border-radius: 0;
   background: #c8c0b0;
 }
 
 .home-recent-row .title {
   flex: 1;
-  font-size: 24px;
+  font-size: 19px;
   color: #6a5e59;
 }
 
@@ -684,7 +727,7 @@ body {
   width: var(--book-form-width);
   height: var(--book-content-height);
   background: #c8c0b0;
-  border-color: #d2c1a7;
+  border: 1px solid #ac9e7e;
 }
 
 .reminders-panel-header {
@@ -695,11 +738,24 @@ body {
   padding: 0 16px 0 24px;
 }
 
-.reminders-panel-header h3 {
+.reminders-panel-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.reminders-panel-title-wrap h3 {
   flex: 1;
   min-width: 0;
   text-align: left;
   font-size: 24px;
+  margin: 0;
+}
+
+.reminders-week-nav-btn {
+  flex-shrink: 0;
 }
 
 .reminders-header-actions {
@@ -764,6 +820,7 @@ body {
 
 .reminder-form-panel .home-panel-header {
   position: relative;
+  border-bottom-color: #ac9e7e;
 }
 
 .reminder-form-panel .book-form-body {
@@ -836,7 +893,7 @@ body {
 .reminder-form-panel .book-form-body .form-field input,
 .reminder-form-panel .book-form-body .form-field select {
   background: #e2ded4;
-  border-color: #b1a490;
+  border-color: #ac9e7e;
 }
 
 .book-form-body .form-field input[type='time'],
@@ -1023,6 +1080,7 @@ body {
   min-height: 44px;
   padding: 8px 12px;
   font-size: 15px;
+  background: #5e544e;
 }
 
 .reminders-sound-btn img {
@@ -1158,12 +1216,11 @@ body {
 }
 
 .achievement-dot {
-  width: 24px;
-  height: 24px;
+  width: 10px;
+  height: 10px;
   flex-shrink: 0;
-  border-radius: 50%;
-  background: #c69532;
-  box-shadow: inset 0 0 0 4px #e2ded4;
+  border-radius: 0;
+  background: #C8C0B0;
 }
 
 .book-achievement-row .main {

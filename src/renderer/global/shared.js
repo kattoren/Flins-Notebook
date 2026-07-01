@@ -13,6 +13,12 @@ function formatDate(date) {
   return `${y}-${m}-${d}`;
 }
 
+function formatDisplayDate(date) {
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${m}-${d}`;
+}
+
 function formatTime12(time24) {
   const [h, m] = time24.split(':').map(Number);
   const period = h >= 12 ? 'PM' : 'AM';
@@ -135,6 +141,7 @@ window.AppShared = {
   DAY_SHORT: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
   escapeHtml,
   formatDate,
+  formatDisplayDate,
   formatTime12,
   formatDateTime,
   getLevelInfo,

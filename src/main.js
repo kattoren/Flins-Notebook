@@ -6,7 +6,7 @@ const { initDataStore } = require('./store/dataStore');
 const { registerDataIpc } = require('./ipc/dataHandlers');
 const { startScheduler } = require('./scheduler/scheduler');
 const { readAudioAsDataUrl, resolveSoundPath } = require('./scheduler/audioHelper');
-const { getGreetingVoiceline, getRandomChatVoiceline, getVoicelinePayload } = require('./audio/voicelines');
+const { getGreetingVoiceline, getRandomChatVoiceline, getRandomOyaVoiceline, getRandomOyaTriple, shouldPlayOyaTriple, getVoicelinePayload } = require('./audio/voicelines');
 const { getLevelUpLine, pickAchievementLine, pickDailyAffirmation } = require('./audio/flinsLines');
 const { getLevelInfo } = require('./levels');
 const { createPetTimer, formatRemaining } = require('./pet/petTimer');
@@ -33,6 +33,7 @@ const PET_MAX_SIZE = 240;
 const PET_BUBBLE_GAP = 32;
 const PET_BUBBLE_MAX_HEIGHT = 360;
 const PET_BUBBLE_AREA = PET_BUBBLE_GAP + PET_BUBBLE_MAX_HEIGHT;
+const FLINS_VOICELINE_MAX_VOLUME = 0.25;
 
 const { getBookWindowSize } = require('./bookLayout');
 
@@ -327,7 +328,7 @@ function playLevelUpSfx() {
   if (!fs.existsSync(LEVEL_UP_SFX)) return;
   const settings = dataStore.settings.get();
   const dataUrl = readAudioAsDataUrl(LEVEL_UP_SFX);
-  const volume = settings.volume ?? 1;
+  const volume = getFlinsVoicelinePlayVolume(settings);
   sendToAudioTarget('play-audio', { dataUrl, volume, playCount: 1 });
 }
 
@@ -542,33 +543,43 @@ function showPetContextMenu() {
   const timerHidden = settings.timerVisible === false;
   const hasPin = Boolean((settings.pinMessage || '').trim());
 
-  const menu = Menu.buildFromTemplate([
+  const menuItems = [
     {
       label: 'Timer',
       click: () => openPetPanel('timer'),
     },
-    {
+  ];
+
+  if (timerRunning && timerHidden) {
+    menuItems.push({
       label: 'Show timer',
-      enabled: timerRunning && timerHidden,
       click: () => showPetTimer(),
-    },
-    {
+    });
+  }
+
+  if (timerRunning) {
+    menuItems.push({
       label: 'End timer',
-      enabled: timerRunning,
       click: () => endPetTimer(),
-    },
-    {
-      label: 'Pin message',
-      click: () => openPetPanel('pin', { message: settings.pinMessage || '' }),
-    },
-    {
+    });
+  }
+
+  menuItems.push({
+    label: 'Pin message',
+    click: () => openPetPanel('pin', { message: settings.pinMessage || '' }),
+  });
+
+  if (hasPin) {
+    menuItems.push({
       label: 'Clear pin message',
-      enabled: hasPin,
       click: () => {
         dataStore.settings.update({ pinMessage: '' });
         syncPinToPet();
       },
-    },
+    });
+  }
+
+  menuItems.push(
     { type: 'separator' },
     {
       label: 'Pet style',
@@ -593,6 +604,13 @@ function showPetContextMenu() {
         },
         { type: 'separator' },
         {
+          label: 'Oya mode',
+          type: 'checkbox',
+          checked: settings.oyaMode === true,
+          click: (menuItem) => dataStore.settings.update({ oyaMode: menuItem.checked }),
+        },
+        { type: 'separator' },
+        {
           label: 'Set name',
           click: () => openPetPanel('name', { name: settings.petName || '' }),
         },
@@ -606,7 +624,7 @@ function showPetContextMenu() {
       },
     },
     {
-      label: 'Stay on top ( ͡° ͜ʖ ͡°)',
+      label: 'Stay on seme ( ◠‿◠ )',
       type: 'checkbox',
       checked: petAlwaysOnTop,
       click: (menuItem) => setPetAlwaysOnTop(menuItem.checked),
@@ -621,7 +639,9 @@ function showPetContextMenu() {
       label: 'Close Book',
       click: () => quitApp(),
     },
-  ]);
+  );
+
+  const menu = Menu.buildFromTemplate(menuItems);
   menu.popup({ window: petWindow });
 }
 
@@ -674,8 +694,16 @@ function sendToPetWindow(channel, payload) {
   sendToWindow(petWindow, channel, payload);
 }
 
-function broadcastVoicelineVolume(volume) {
-  sendToPetWindow('voiceline-volume', volume);
+function getFlinsVoicelinePlayVolume(settingsOrUserVolume) {
+  const userVolume = typeof settingsOrUserVolume === 'object' && settingsOrUserVolume !== null
+    ? settingsOrUserVolume.voicelineVolume ?? 0.25
+    : settingsOrUserVolume;
+  const clamped = Math.min(1, Math.max(0, Number(userVolume) || 0));
+  return clamped * FLINS_VOICELINE_MAX_VOLUME;
+}
+
+function broadcastVoicelineVolume(userVolume) {
+  sendToPetWindow('voiceline-volume', getFlinsVoicelinePlayVolume(userVolume));
 }
 
 function playVoicelineFile(filePath, text) {
@@ -684,7 +712,7 @@ function playVoicelineFile(filePath, text) {
   const payload = getVoicelinePayload(filePath);
   const settings = dataStore.settings.get();
   const dataUrl = readAudioAsDataUrl(filePath);
-  const volume = settings.voicelineVolume ?? 0.25;
+  const volume = getFlinsVoicelinePlayVolume(settings);
 
   sendToPetWindow('play-voiceline', {
     dataUrl,
@@ -692,6 +720,24 @@ function playVoicelineFile(filePath, text) {
     text: text || payload.text,
     imageSrc: resolvePetImageSrc(payload.sprite),
   });
+}
+
+function playVoicelineSequence(voicelinePayloads) {
+  if (!Array.isArray(voicelinePayloads) || !voicelinePayloads.length) return;
+
+  const settings = dataStore.settings.get();
+  const volume = getFlinsVoicelinePlayVolume(settings);
+  const items = voicelinePayloads
+    .filter((payload) => payload?.filePath && fs.existsSync(payload.filePath))
+    .map((payload) => ({
+      dataUrl: readAudioAsDataUrl(payload.filePath),
+      volume,
+      text: payload.text || '',
+      imageSrc: resolvePetImageSrc(payload.sprite),
+    }));
+
+  if (!items.length) return;
+  sendToPetWindow('play-voiceline-sequence', { items });
 }
 
 function sendPetHop() {
@@ -1127,6 +1173,8 @@ ipcMain.handle('pet:isVisible', () => isPetVisible());
 
 ipcMain.handle('pet:ready', () => {
   syncPinToPet();
+  const settings = dataStore.settings.get();
+  broadcastVoicelineVolume(settings.voicelineVolume ?? 0.25);
   if (petTimer && petTimer.isRunning()) {
     pushTimerToPet(getTimerTickPayload());
   }
@@ -1143,6 +1191,23 @@ ipcMain.handle('pet:ready', () => {
 });
 
 ipcMain.handle('pet:playChatVoiceline', () => {
+  const settings = dataStore.settings.get();
+  if (settings.oyaMode) {
+    const oya = getRandomOyaVoiceline();
+    if (oya) {
+      playVoicelineFile(oya.filePath, oya.text);
+    }
+    return;
+  }
+
+  if (shouldPlayOyaTriple()) {
+    const triple = getRandomOyaTriple();
+    if (triple?.length === 3) {
+      playVoicelineSequence(triple);
+      return;
+    }
+  }
+
   const chat = getRandomChatVoiceline();
   if (chat) {
     playVoicelineFile(chat.filePath, chat.text);

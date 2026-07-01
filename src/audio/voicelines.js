@@ -5,27 +5,67 @@ const VOICELINES_DIR = path.join(__dirname, 'voicelines');
 const GREETING_VOICELINE = path.join(VOICELINES_DIR, 'flins_greeting.mp3');
 
 const DIALOGUE_LINES = {
-  greeting: 'キリル・チュードミロヴィッチ・フリンズです——どうぞよろしく',
-  patience: '人間の複雑さや多様性には、忍耐強く接するべきです。少数の愚かで卑劣な者たちの行為に憤る必要などありません。',
-  wild_hunt: '深淵を覗きたければ、ナド・クライの夜霧の中を歩むのがおすすめですよ。ワイルドハントの行軍が、暗闇に引きずり込んでくれるでしょう。',
-  ghosts: 'なぜ亡霊を怖がる必要が？彼らはただの話せる影ですよ。ただ自分の過去を延々と語り続けることしかできません。',
+  greeting: 'キリル・チュードミロヴィッチ・フリンズです——どうぞよろしく。',
+  opening: 'どうぞよろしく。',
+  patience: '人間の複雑さや多様性には、忍耐強く接するべきです。 少数の愚かで卑劣な者たちの行為に憤る必要などありません。',
+  wild_hunt: '深淵を覗きたければ、ナド・クライの夜霧の中を歩むのがおすすめですよ。 ワイルドハントの行軍が、暗闇に引きずり込んでくれるでしょう。',
+  ghosts: 'なぜ亡霊を怖がる必要が？彼らはただの話せる影ですよ。 ただ自分の過去を延々と語り続けることしかできません。',
+  good_morning: 'おはようございます。 太陽がナド・クライを照らしていますね…これまで何百年もの間、そうしてきたように。',
+  good_afternoon: 'こんにちは。 僕に昼寝の習慣はありませんが、仮眠を取りたいのであればどうぞ。',
+  good_evening: '活動するなら、夜のほうが好きです。 ランプは暗闇を照らすためにあるものでしょう？',
+  good_night: '夜こそが、僕の大切な時間です。 せっかく起きておられるなら、月が出ているうちに古い物語でもお聞かせしましょうか？',
+  wind_blowing: '「風が目覚め、落ち葉を載せて旅に出る…」',
+  favorite_food: '炎の中で沸騰する水を見たことはありますか？ ——無いのですか…それは残念ですね。 スネージナヤには「炎水」というお酒があるのですが、そのお酒に火を点けると、炎が水の上で燃える様子を見ることができますよ。',
+  hobbies: '古銭や古い宝石に興味はありますか？それそのものに価値があるというだけでなく、歳月の刻んだ痕跡はそれらを更に美しく魅せるんです。 長い時間をかけて熟成された美酒のように、趣があると思いませんか？',
+  troubles: 'ピラミダ配属の同僚に優しい老紳士がいるのですが、よく僕の近況に関心を寄せる手紙を送ってくれるんです。 ただ、今の環境はとても快適なので、僕は改善の必要性を感じていません。',
+  receiving_gift: 'ええ、とても美味しいです。',
+  joining_party: 'あなたのような優秀な方と一緒に行動できて光栄です。 さて、そろそろ夜も更けてきましたが…僕が照らしましょうか？',
+  virtues: '慎重に、謙虚に、そして忠実に。 僕はライトキーパーが提唱する三つの美徳に賛同しています。',
+  illuga: '「ライトキーパー」への加入は自由です。 多くの人が加入しては脱退していくので、よほど粘り強い人しか残らないのですが、彼はその残った一人です。 人間社会では頭の回転が速く機転が利く人が重宝されがちですが、僕は「ひたむきさ」の方が尊いと思いますね。',
+  us_fae_and_humans: '気づけば、随分と長い距離を歩いてきましたね。 かつてフェイと人間がスネージナヤを自由に渡り歩いた時代を思い出します。 僕たちの間には共通点が多々ありますが、今は、優しい心の裏には同じような魂があるからだと思っています。',
 };
+
+const CHAT_TOPIC_BY_FRAGMENT = [
+  ['about flins_virtues', 'virtues'],
+  ['about illuga', 'illuga'],
+  ['about us_fae and humans', 'us_fae_and_humans'],
+  ['when the wind is blowing', 'wind_blowing'],
+  ['favorite food', 'favorite_food'],
+  ['good morning', 'good_morning'],
+  ['good evening', 'good_evening'],
+  ['good night', 'good_night'],
+  ['receiving a gift', 'receiving_gift'],
+  ['joining party', 'joining_party'],
+  ['wild hunt', 'wild_hunt'],
+  ['patience', 'patience'],
+  ['ghosts', 'ghosts'],
+  ['hobbies', 'hobbies'],
+  ['troubles', 'troubles'],
+];
 
 const IDLE_SPRITE = 'flins_idle.png';
 
 const SPRITE_BY_TOPIC = {
   greeting: 'flins_bow.png',
+  opening: 'flins_bow.png',
   patience: 'flins_think.png',
   wild_hunt: 'flins_night.png',
   ghosts: 'flins_angry.png',
+  good_evening: 'flins_night.png',
+  good_night: 'flins_night.png',
 };
 
 function getTopicForFile(filePath) {
   const base = path.basename(filePath, '.mp3').toLowerCase();
-  if (base.includes('greeting')) return 'greeting';
-  if (base.includes('patience')) return 'patience';
-  if (base.includes('wild')) return 'wild_hunt';
-  if (base.includes('ghost')) return 'ghosts';
+  if (base.startsWith('oya_')) return null;
+  if (base === 'flins_greeting') return 'greeting';
+  if (base === 'flins_opening') return 'opening';
+  if (!base.startsWith('flins_chat_')) return null;
+
+  const chatPart = base.slice('flins_chat_'.length);
+  for (const [fragment, topic] of CHAT_TOPIC_BY_FRAGMENT) {
+    if (chatPart === fragment) return topic;
+  }
   return null;
 }
 
@@ -40,7 +80,7 @@ function getDialogueForFile(filePath) {
 
 function getSpriteForFile(filePath) {
   const topic = getTopicForFile(filePath);
-  return topic ? SPRITE_BY_TOPIC[topic] : IDLE_SPRITE;
+  return topic ? (SPRITE_BY_TOPIC[topic] || IDLE_SPRITE) : IDLE_SPRITE;
 }
 
 function listVoicelines(prefix) {
@@ -50,23 +90,48 @@ function listVoicelines(prefix) {
     .map((file) => path.join(VOICELINES_DIR, file))
     .sort();
 }
+
 function getGreetingVoiceline() {
   return fs.existsSync(GREETING_VOICELINE) ? GREETING_VOICELINE : null;
 }
 
 let lastChatVoicelinePath = null;
+let lastOyaVoicelinePath = null;
 
-function pickRandomChatFile(files) {
+function listOyaVoicelines() {
+  return listVoicelines('oya_');
+}
+
+function pickRandomFile(files, lastPathRef) {
   if (!files.length) return null;
   if (files.length === 1) return files[0];
   let pick = files[Math.floor(Math.random() * files.length)];
   let guard = 0;
-  while (pick === lastChatVoicelinePath && guard < 16) {
+  while (pick === lastPathRef && guard < 16) {
     pick = files[Math.floor(Math.random() * files.length)];
     guard += 1;
   }
-  lastChatVoicelinePath = pick;
   return pick;
+}
+
+function getRandomOyaVoiceline() {
+  const filePath = pickRandomFile(listOyaVoicelines(), lastOyaVoicelinePath);
+  if (!filePath) return null;
+  lastOyaVoicelinePath = filePath;
+  return getVoicelinePayload(filePath);
+}
+
+function getRandomOyaTriple() {
+  const oyaFiles = listOyaVoicelines();
+  if (!oyaFiles.length) return null;
+  return Array.from({ length: 3 }, () => {
+    const filePath = oyaFiles[Math.floor(Math.random() * oyaFiles.length)];
+    return getVoicelinePayload(filePath);
+  });
+}
+
+function shouldPlayOyaTriple() {
+  return Math.random() < 0.1;
 }
 
 function getRandomChatVoiceline() {
@@ -74,8 +139,9 @@ function getRandomChatVoiceline() {
     ...listVoicelines('flins_chat_'),
     ...listVoicelines('oya_'),
   ];
-  const filePath = pickRandomChatFile(chats);
+  const filePath = pickRandomFile(chats, lastChatVoicelinePath);
   if (!filePath) return null;
+  lastChatVoicelinePath = filePath;
   return getVoicelinePayload(filePath);
 }
 
@@ -93,6 +159,9 @@ module.exports = {
   IDLE_SPRITE,
   getGreetingVoiceline,
   getRandomChatVoiceline,
+  getRandomOyaVoiceline,
+  getRandomOyaTriple,
+  shouldPlayOyaTriple,
   getVoicelinePayload,
   getDialogueForFile,
   getSpriteForFile,

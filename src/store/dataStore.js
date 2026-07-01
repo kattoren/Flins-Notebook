@@ -28,6 +28,7 @@ function createDefaultData(petImagePath) {
       petAlwaysOnTop: true,
       petRoamMode: false,
       petForm: 'gif',
+      oyaMode: false,
       petName: '',
       pinMessage: '',
       timerVisible: true,

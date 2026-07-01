@@ -40,7 +40,7 @@ function renderLevelSummary(total) {
     const currentInBand = total - (info.level > 0 ? window.AppShared.LEVEL_THRESHOLDS[info.level - 1] : 0);
     const bandSize = info.nextThreshold - (info.level > 0 ? window.AppShared.LEVEL_THRESHOLDS[info.level - 1] : 0);
     if (progressFraction) progressFraction.textContent = `${currentInBand} / ${bandSize}`;
-    progressLabel.textContent = `${info.untilNext} more to reach Level ${info.level + 1}`;
+    progressLabel.textContent = `${currentInBand} / ${bandSize}`;
   }
 }
 

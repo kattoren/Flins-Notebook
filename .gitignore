@@ -5,7 +5,6 @@ build/
 out/
 release/
 
-# Never commit build outputs or dependencies
 *.exe
 *.msi
 *.dmg

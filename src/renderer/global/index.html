@@ -66,7 +66,15 @@
           <div class="reminders-book-layout" id="reminders-book-layout">
             <div class="book-panel reminders-list-panel" id="reminders-list-panel-wrap">
               <div class="home-panel-header reminders-panel-header">
-                <h3 id="reminders-list-heading">Today's Reminders</h3>
+                <div class="reminders-panel-title-wrap">
+                  <button id="reminders-week-prev" class="reminders-icon-btn reminders-week-nav-btn hidden" type="button" aria-label="Previous week">
+                    <img data-icon="Icons/icon_left.svg" alt="">
+                  </button>
+                  <h3 id="reminders-list-heading">Today's Reminders</h3>
+                  <button id="reminders-week-next" class="reminders-icon-btn reminders-week-nav-btn hidden" type="button" aria-label="Next week">
+                    <img data-icon="Icons/icon_right.svg" alt="">
+                  </button>
+                </div>
                 <div class="reminders-header-actions">
                   <div class="book-view-toggle">
                     <button id="reminders-day-view" class="active" type="button">Today</button>
@@ -88,7 +96,7 @@
                 <h3 id="form-title">New reminder</h3>
                 <button id="reminder-form-close" class="reminder-form-close" type="button" aria-label="Close form">×</button>
               </div>
-              <div id="reminder-form" class="book-form-body reminder-form">
+              <div id="reminder-form" class="book-form-body">
                 <div class="form-field">
                   <label for="reminder-title">Title</label>
                   <input id="reminder-title" type="text" required placeholder="What to remember">
@@ -100,7 +108,7 @@
                 <div class="form-field">
                   <label for="reminder-repeat">Repeat</label>
                   <select id="reminder-repeat">
-                    <option value="once">Once</option>
+                    <option value="once">One time</option>
                     <option value="daily">Daily</option>
                     <option value="weekdays">Weekdays</option>
                     <option value="weekends">Weekends</option>

@@ -46,7 +46,7 @@ body {
   display: flex;
   flex-direction: column-reverse;
   align-items: stretch;
-  gap: 4px;
+  gap: 10px;
   width: var(--pet-bubble-width, 100%);
   max-width: var(--pet-bubble-width, 100%);
   padding-bottom: 2px;
@@ -56,12 +56,14 @@ body {
 }
 
 #pet-root.pet-form-lantern {
-  --lantern-bubble-gap: 22px;
+  --lantern-bubble-gap: 50px;
 }
 
 #pet-root.pet-form-lantern .flins-stack {
   width: var(--pet-bubble-width, 100%);
   align-self: center;
+  overflow: visible;
+  margin-bottom: 16px;
 }
 
 #pet-root.pet-form-lantern #flins-wrap {
@@ -422,14 +424,14 @@ body {
 
 @keyframes lantern-float {
   0% {
-    transform: translateY(10px);
+    transform: translateY(0);
     animation-timing-function: cubic-bezier(0.22, 0.85, 0.35, 1);
   }
   38% {
-    transform: translateY(-2px);
+    transform: translateY(-12px);
     animation-timing-function: cubic-bezier(0.45, 0, 0.75, 1);
   }
   100% {
-    transform: translateY(10px);
+    transform: translateY(0);
   }
 }
