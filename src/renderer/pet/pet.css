@@ -133,10 +133,28 @@ body {
   overflow: visible;
 }
 
-.pet-speech-bubble {
+.pet-speech-bubble,
+.pet-levelup-bubble {
   pointer-events: auto;
   padding-top: 10px;
   padding-right: 28px;
+}
+
+.pet-speech-bubble.bubble-entering,
+.pet-levelup-bubble.bubble-entering {
+  animation:
+    bubble-fade-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards,
+    bubble-slide-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.pet-speech-bubble.bubble-hiding,
+.pet-levelup-bubble.bubble-hiding {
+  animation: bubble-fade-out 1.5s ease-in forwards;
+  pointer-events: none;
+}
+
+.pet-levelup-bubble {
+  border-color: #c69532;
 }
 
 .pet-chat-bubble.hidden {
@@ -165,6 +183,7 @@ body {
 }
 
 #speech-bubble .speech-tail,
+#levelup-bubble .speech-tail,
 #timer-bubble .speech-tail {
   display: none;
 }
@@ -173,6 +192,33 @@ body {
   pointer-events: auto;
   padding-top: 10px;
   padding-right: 28px;
+  text-align: center;
+}
+
+.pet-timer-title {
+  margin: 0 0 8px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #fff;
+  text-align: center;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
+.pet-timer-bubble--simple {
+  padding-top: 12px;
+}
+
+.pet-timer-display {
+  margin: 0;
+  font-size: 12px !important;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+  letter-spacing: 0.04em;
+  line-height: 1.35;
+  color: #fff;
+  text-align: center;
 }
 
 .pet-bubble-close {
@@ -202,15 +248,6 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.04em;
   margin-bottom: 2px !important;
-}
-
-.pet-timer-display {
-  margin: 0;
-  font-size: 14px !important;
-  font-weight: 400;
-  letter-spacing: 0.02em;
-  line-height: 1.35;
-  color: #fff;
 }
 
 .pet-panel-overlay {
@@ -415,6 +452,35 @@ body {
 
 .hidden {
   display: none !important;
+}
+
+@keyframes bubble-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes bubble-slide-in {
+  from {
+    transform: translateY(18px);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes bubble-fade-out {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(0);
+  }
 }
 
 @keyframes flins-hop {

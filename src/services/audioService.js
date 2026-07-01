@@ -36,6 +36,8 @@ function playVoicelineFile(ctx, filePath, text, options = {}) {
     text: text || payload.text,
     imageSrc: resolvePetImageSrc(sprite),
     spriteHoldMs: options.spriteHoldMs || 0,
+    speechChannel: options.speechChannel || 'speech',
+    speechHoldMs: options.speechHoldMs || 0,
   });
 }
 

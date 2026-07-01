@@ -5,9 +5,13 @@ const flinsWrap = document.getElementById('flins-wrap');
 const bubblesColumn = document.getElementById('pet-bubbles');
 const bubble = document.getElementById('speech-bubble');
 const speechText = document.getElementById('speech-text');
+const levelUpBubble = document.getElementById('levelup-bubble');
+const levelUpText = document.getElementById('levelup-text');
+const levelUpCloseBtn = document.getElementById('levelup-close');
 const pinBubble = document.getElementById('pin-bubble');
 const pinText = document.getElementById('pin-text');
 const timerBubble = document.getElementById('timer-bubble');
+const timerTitle = document.getElementById('timer-title');
 const timerDisplay = document.getElementById('timer-display');
 const timerCloseBtn = document.getElementById('timer-close');
 const speechCloseBtn = document.getElementById('speech-close');
@@ -23,8 +27,9 @@ let hopTimer = null;
 let timerRunning = false;
 let timerVisible = true;
 let bubbleWidthPx = null;
-let speechDismissTimer = null;
 let layoutDims = null;
+
+const BUBBLE_EXIT_MS = 1500;
 
 function applyBubbleWidth(width) {
   if (!width) return;
@@ -97,26 +102,42 @@ function setPetSprite(src) {
   if (src) img.src = src;
 }
 
-function resetSpeechOnly() {
-  hideSpeechBubble();
+function resetPetSpriteOnly() {
   flinsWrap.classList.remove('pet-hop');
   setPetSprite(formBaseSrc);
+}
+
+function resetSpeechOnly() {
+  hideSpeechBubble();
+  resetPetSpriteOnly();
 }
 
 function resetToIdle() {
   resetSpeechOnly();
 }
 
-function playVoiceline({ dataUrl, volume, text, imageSrc, spriteHoldMs = 0 }) {
+function playVoiceline({ dataUrl, volume, text, imageSrc, spriteHoldMs = 0, speechChannel = 'speech', speechHoldMs = 0 }) {
   const player = window.PetAudioPlayer;
   playHop();
-  showSpeechBubble(text);
+  if (speechChannel === 'levelUp') {
+    showLevelUpBubble(text, { autoDismissMs: speechHoldMs || 30000 });
+  } else {
+    showSpeechBubble(text);
+  }
   if (petForm === 'sticker' && imageSrc) {
     setPetSprite(imageSrc);
   }
   player.playDataUrl(dataUrl, volume, {
     interrupt: true,
     onEnded: () => {
+      if (speechChannel === 'levelUp') {
+        if (spriteHoldMs > 0 && petForm === 'sticker') {
+          setTimeout(resetPetSpriteOnly, spriteHoldMs);
+        } else {
+          resetPetSpriteOnly();
+        }
+        return;
+      }
       if (spriteHoldMs > 0 && petForm === 'sticker') {
         setTimeout(resetSpeechOnly, spriteHoldMs);
       } else {
@@ -143,29 +164,93 @@ async function playVoicelineSequence({ items }) {
   resetSpeechOnly();
 }
 
-function showSpeechBubble(text, { autoDismissMs = 0 } = {}) {
-  if (speechDismissTimer) {
-    clearTimeout(speechDismissTimer);
-    speechDismissTimer = null;
+function showAnimatedBubble(el, textEl, text, {
+  dismissTimerRef,
+  exitTimerRef,
+  autoDismissMs = 0,
+  onHide,
+} = {}) {
+  if (dismissTimerRef.current) {
+    clearTimeout(dismissTimerRef.current);
+    dismissTimerRef.current = null;
+  }
+  if (exitTimerRef.current) {
+    clearTimeout(exitTimerRef.current);
+    exitTimerRef.current = null;
   }
 
-  speechText.textContent = text || '';
-  bubble.classList.remove('hidden');
-  bubble.setAttribute('aria-hidden', 'false');
+  textEl.textContent = text || '';
+  el.classList.remove('hidden', 'bubble-hiding');
+  el.setAttribute('aria-hidden', 'false');
+
+  el.classList.remove('bubble-entering');
+  void el.offsetWidth;
+  el.classList.add('bubble-entering');
 
   if (autoDismissMs > 0) {
-    speechDismissTimer = setTimeout(() => hideSpeechBubble(), autoDismissMs);
+    dismissTimerRef.current = setTimeout(() => onHide(), autoDismissMs);
   }
 }
 
-function hideSpeechBubble() {
-  if (speechDismissTimer) {
-    clearTimeout(speechDismissTimer);
-    speechDismissTimer = null;
+function hideAnimatedBubble(el, textEl, { dismissTimerRef, exitTimerRef } = {}) {
+  if (dismissTimerRef?.current) {
+    clearTimeout(dismissTimerRef.current);
+    dismissTimerRef.current = null;
   }
-  bubble.classList.add('hidden');
-  bubble.setAttribute('aria-hidden', 'true');
-  speechText.textContent = '';
+  if (el.classList.contains('hidden') || el.classList.contains('bubble-hiding')) {
+    return;
+  }
+
+  el.classList.remove('bubble-entering');
+  el.classList.add('bubble-hiding');
+  el.setAttribute('aria-hidden', 'true');
+
+  if (exitTimerRef.current) {
+    clearTimeout(exitTimerRef.current);
+  }
+  exitTimerRef.current = setTimeout(() => {
+    exitTimerRef.current = null;
+    el.classList.remove('bubble-hiding');
+    el.classList.add('hidden');
+    textEl.textContent = '';
+  }, BUBBLE_EXIT_MS);
+}
+
+const speechDismissRef = { current: null };
+const speechExitRef = { current: null };
+const levelUpDismissRef = { current: null };
+const levelUpExitRef = { current: null };
+
+function showSpeechBubble(text, { autoDismissMs = 0 } = {}) {
+  showAnimatedBubble(bubble, speechText, text, {
+    dismissTimerRef: speechDismissRef,
+    exitTimerRef: speechExitRef,
+    autoDismissMs,
+    onHide: hideSpeechBubble,
+  });
+}
+
+function hideSpeechBubble() {
+  hideAnimatedBubble(bubble, speechText, {
+    dismissTimerRef: speechDismissRef,
+    exitTimerRef: speechExitRef,
+  });
+}
+
+function showLevelUpBubble(text, { autoDismissMs = 30000 } = {}) {
+  showAnimatedBubble(levelUpBubble, levelUpText, text, {
+    dismissTimerRef: levelUpDismissRef,
+    exitTimerRef: levelUpExitRef,
+    autoDismissMs,
+    onHide: hideLevelUpBubble,
+  });
+}
+
+function hideLevelUpBubble() {
+  hideAnimatedBubble(levelUpBubble, levelUpText, {
+    dismissTimerRef: levelUpDismissRef,
+    exitTimerRef: levelUpExitRef,
+  });
 }
 
 function setPinMessage(text) {
@@ -191,8 +276,20 @@ function updateTimerBubble(payload) {
     return;
   }
 
-  const title = payload.title || 'TIMER';
-  timerDisplay.textContent = `${title} ${payload.display || '0:00'}`;
+  const isSimple = payload.type === 'simple';
+  const title = (payload.title || '').trim();
+
+  timerBubble.classList.toggle('pet-timer-bubble--simple', isSimple);
+
+  if (!isSimple && title) {
+    timerTitle.textContent = title;
+    timerTitle.classList.remove('hidden');
+  } else {
+    timerTitle.textContent = '';
+    timerTitle.classList.add('hidden');
+  }
+
+  timerDisplay.textContent = payload.display || '0:00';
   timerBubble.classList.remove('hidden');
   timerBubble.setAttribute('aria-hidden', 'false');
 }
@@ -215,6 +312,10 @@ function setupAudioListeners() {
 
   window.petApi.onSpeak((payload) => {
     playHops(payload?.hops ?? 1);
+    if (payload?.channel === 'levelUp') {
+      showLevelUpBubble(payload?.text || '', { autoDismissMs: payload?.autoDismissMs || 30000 });
+      return;
+    }
     showSpeechBubble(payload?.text || '', { autoDismissMs: payload?.autoDismissMs || 0 });
   });
 
@@ -275,6 +376,11 @@ async function init() {
   speechCloseBtn?.addEventListener('click', (e) => {
     e.stopPropagation();
     hideSpeechBubble();
+  });
+
+  levelUpCloseBtn?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    hideLevelUpBubble();
   });
 
   window.petApi.notifyReady();

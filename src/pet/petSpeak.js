@@ -23,6 +23,18 @@ function formatPomodoroBreakTitle(settings) {
   return `Break time, ${getPetName(settings)}!`;
 }
 
+function formatTimerUpNotification(settings) {
+  return `The time is up, ${getPetName(settings)}!`;
+}
+
+function formatPomodoroWorkNotification(settings) {
+  return `${getPetName(settings)}, work time!`;
+}
+
+function formatPomodoroBreakNotification(settings) {
+  return `${getPetName(settings)}, break time!`;
+}
+
 function formatTime12From24(time24) {
   const [h, m] = time24.split(':').map(Number);
   const period = h >= 12 ? 'PM' : 'AM';
@@ -37,5 +49,8 @@ module.exports = {
   formatBreakSpeech,
   formatPomodoroWorkTitle,
   formatPomodoroBreakTitle,
+  formatPomodoroWorkNotification,
+  formatPomodoroBreakNotification,
+  formatTimerUpNotification,
   formatTime12From24,
 };

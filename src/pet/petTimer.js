@@ -40,14 +40,15 @@ function createPetTimer(callbacks) {
 
     if (state.type === 'pomodoro' && state.phase === 'work') {
       state.cyclesCompleted += 1;
-      onTimerComplete({ type: 'pomodoro', phase: 'work' });
 
       if (state.cyclesCompleted >= state.cyclesTotal) {
+        onTimerComplete({ type: 'pomodoro', phase: 'work', nextPhase: null });
         onPhaseEnd({ phase: 'work', completedAll: true });
         stop();
         return;
       }
 
+      onTimerComplete({ type: 'pomodoro', phase: 'work', nextPhase: 'break' });
       state.phase = 'break';
       state.endAt = Date.now() + state.breakSec * 1000;
       onBreakStart();
@@ -56,6 +57,7 @@ function createPetTimer(callbacks) {
     }
 
     if (state.type === 'pomodoro' && state.phase === 'break') {
+      onTimerComplete({ type: 'pomodoro', phase: 'break', nextPhase: 'work' });
       state.phase = 'work';
       state.endAt = Date.now() + state.workSec * 1000;
       onPhaseEnd({ phase: 'break' });
@@ -134,7 +136,7 @@ function formatRemaining(ms) {
   if (hours > 0) {
     return `${hours}:${mm}:${ss}`;
   }
-  return `${minutes}:${ss}`;
+  return `${mm}:${ss}`;
 }
 
 module.exports = { createPetTimer, formatRemaining };

@@ -50,6 +50,7 @@ function startReminderScheduler(ctx) {
 
 function initReminderService(ctx) {
   ctx.startReminderScheduler = () => startReminderScheduler(ctx);
+  ctx.showAppNotification = (body, options) => showAppNotification(body, options);
 }
 
 module.exports = { initReminderService };

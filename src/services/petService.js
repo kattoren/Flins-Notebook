@@ -4,6 +4,9 @@ const { createPetTimer, formatRemaining } = require('../pet/petTimer');
 const {
   formatPomodoroWorkTitle,
   formatPomodoroBreakTitle,
+  formatPomodoroWorkNotification,
+  formatPomodoroBreakNotification,
+  formatTimerUpNotification,
 } = require('../pet/petSpeak');
 const { pickAchievementLine, pickDailyAffirmation, getLevelUpLine } = require('../../assets/audio/flinsLines');
 const { getLevelInfo } = require('../utils/levels');
@@ -13,9 +16,9 @@ const { sendToWindow } = require('../utils/windowMessaging');
 const RECEIVING_GIFT_COOLDOWN_MS = 30000;
 const STICKER_BOW_SPRITE = 'flins_bow.png';
 
-function speakPetMessage(ctx, text, { hops = 1, autoDismissMs = 0 } = {}) {
+function speakPetMessage(ctx, text, { hops = 1, autoDismissMs = 0, channel = 'speech' } = {}) {
   if (!ctx.isPetVisible() || !text) return;
-  ctx.sendToPetWindow('pet:speak', { text, hops, autoDismissMs });
+  ctx.sendToPetWindow('pet:speak', { text, hops, autoDismissMs, channel });
 }
 
 function stopPetAudio(ctx) {
@@ -65,10 +68,14 @@ function handleAchievementCreated(ctx, { beforeCount, afterCount }) {
       ctx.playVoicelineFile(
         voiceline.filePath,
         levelText,
-        getReceivingGiftOptions(ctx),
+        {
+          ...getReceivingGiftOptions(ctx),
+          speechChannel: 'levelUp',
+          speechHoldMs: 30000,
+        },
       );
     } else if (levelText) {
-      speakPetMessage(ctx, levelText, { hops: 3, autoDismissMs: 30000 });
+      speakPetMessage(ctx, levelText, { hops: 3, autoDismissMs: 30000, channel: 'levelUp' });
     }
     return;
   }
@@ -107,7 +114,7 @@ function pushTimerToPet(ctx, tick) {
   if (!ctx.dataStore) return;
   const settings = ctx.dataStore.settings.get();
   const { timerVisible } = settings;
-  let title = 'TIMER';
+  let title = '';
   if (tick.type === 'pomodoro') {
     title = tick.phase === 'break'
       ? formatPomodoroBreakTitle(settings)
@@ -142,13 +149,37 @@ function endPetTimer(ctx) {
   pushTimerToPet(ctx, { running: false, display: '0:00', phase: '', type: '' });
 }
 
+function handleTimerPhaseComplete(ctx, payload) {
+  ctx.playTimerAlarm();
+  if (!ctx.dataStore) return;
+
+  const settings = ctx.dataStore.settings.get();
+
+  if (payload?.type === 'simple') {
+    if (ctx.showAppNotification) {
+      ctx.showAppNotification(formatTimerUpNotification(settings), { subtitle: 'Timer' });
+    }
+    return;
+  }
+
+  if (payload?.type !== 'pomodoro') return;
+
+  if (payload.nextPhase === 'break') {
+    if (ctx.showAppNotification) {
+      ctx.showAppNotification(formatPomodoroBreakNotification(settings), { subtitle: 'Pomodoro' });
+    }
+  } else if (payload.nextPhase === 'work') {
+    if (ctx.showAppNotification) {
+      ctx.showAppNotification(formatPomodoroWorkNotification(settings), { subtitle: 'Pomodoro' });
+    }
+  }
+}
+
 function initPetTimer(ctx) {
   ctx.petTimer = createPetTimer({
     onTick: (tick) => pushTimerToPet(ctx, tick),
     onBreakStart: () => {},
-    onTimerComplete: () => {
-      ctx.playTimerAlarm();
-    },
+    onTimerComplete: (payload) => handleTimerPhaseComplete(ctx, payload),
     onPhaseEnd: () => {},
     onStop: () => pushTimerToPet(ctx, { running: false, display: '0:00' }),
   });
@@ -244,7 +275,6 @@ function showPetContextMenu(ctx) {
         },
       ],
     },
-    { type: 'separator' },
     {
       label: 'Dismiss',
       click: () => dismissPet(ctx),
@@ -260,7 +290,6 @@ function showPetContextMenu(ctx) {
       label: 'Open book',
       click: () => ctx.openBookWindow(),
     },
-    { type: 'separator' },
     {
       label: 'Close book',
       click: () => ctx.quitApp(),
