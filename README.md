@@ -21,8 +21,12 @@ A  Windows desktop reminder app with a book-themed planner and Flins as a deskto
     -  switch styles (animated, lantern, sticker)
 - Has 2 easter eggs ( ◠‿◠ )
 
+## **Credit**
+- UI made in Figma
+- Flins drawn in Clip Studio Paint and animated in Spine 2D
+- Flins stickers and lantern: Hoyoverse
 
 ## **How to Run:** 
 1. Download the exe [here](https://github.com/kattoren/Flins-Notebook/releases/tag/v0.1.0)
-2. Unblock
+2. Unblock in properties
 3. Run and note your wins with Flins!
