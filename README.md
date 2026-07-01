@@ -13,7 +13,7 @@ A  Windows desktop reminder app with a book-themed planner and Flins as a deskto
 
 ## **Flins:**
 - drag Flins around your desktop
-- click him for up to 19 unique voicelines
+- click him for up to 19 unique JP voicelines
 - use the right-click menu to access menu to:
     -  set your name
     -  pin a sticky message
