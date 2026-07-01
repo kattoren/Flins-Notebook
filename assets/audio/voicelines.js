@@ -74,6 +74,15 @@ const SPRITE_BY_TOPIC = {
   good_night_teapot: 'flins_night.png',
 };
 
+const VOLUME_GAIN_BY_BASENAME = {
+  'flins_teapot_good night': 1.85,
+};
+
+function getVolumeGainForFile(filePath) {
+  const base = path.basename(filePath, '.mp3').toLowerCase();
+  return VOLUME_GAIN_BY_BASENAME[base] ?? 1;
+}
+
 let lastChatVoicelinePath = null;
 let lastOyaVoicelinePath = null;
 let lastStickerFallbackSprite = null;
@@ -224,8 +233,9 @@ function getRandomChatVoiceline(options = {}) {
   const slot = options.timeSlot || getTimeSlot();
   const petForm = options.petForm || null;
   const chats = listChatVoicelines().filter((filePath) => isChatFileAllowedForSlot(filePath, slot));
+  const pool = [...chats, ...listOyaVoicelines()];
 
-  const filePath = pickRandomFile(chats, lastChatVoicelinePath);
+  const filePath = pickRandomFile(pool, lastChatVoicelinePath);
   if (!filePath) return null;
   lastChatVoicelinePath = filePath;
   return getVoicelinePayload(filePath, { petForm });
@@ -236,6 +246,7 @@ function getVoicelinePayload(filePath, options = {}) {
     filePath,
     text: getDialogueForFile(filePath),
     sprite: getSpriteForFile(filePath, options),
+    volumeGain: getVolumeGainForFile(filePath),
   };
 }
 
@@ -257,4 +268,5 @@ module.exports = {
   getDialogueForFile,
   getSpriteForFile,
   getTopicForFile,
+  getVolumeGainForFile,
 };

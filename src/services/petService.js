@@ -5,7 +5,7 @@ const {
   formatPomodoroWorkTitle,
   formatPomodoroBreakTitle,
 } = require('../pet/petSpeak');
-const { pickAchievementLine, pickDailyAffirmation } = require('../../assets/audio/flinsLines');
+const { pickAchievementLine, pickDailyAffirmation, getLevelUpLine } = require('../../assets/audio/flinsLines');
 const { getLevelInfo } = require('../utils/levels');
 const { getReceivingGiftVoiceline } = require('../../assets/audio/voicelines');
 const { sendToWindow } = require('../utils/windowMessaging');
@@ -58,7 +58,18 @@ function handleAchievementCreated(ctx, { beforeCount, afterCount }) {
 
   if (levelAfter > levelBefore) {
     ctx.playLevelUpSfx();
-    tryPlayReceivingGift(ctx, { skipCooldown: true });
+    const voiceline = getReceivingGiftVoiceline();
+    const levelText = getLevelUpLine(levelAfter);
+    if (voiceline && ctx.isPetVisible()) {
+      ctx.lastReceivingGiftAt = Date.now();
+      ctx.playVoicelineFile(
+        voiceline.filePath,
+        levelText,
+        getReceivingGiftOptions(ctx),
+      );
+    } else if (levelText) {
+      speakPetMessage(ctx, levelText, { hops: 3, autoDismissMs: 30000 });
+    }
     return;
   }
 

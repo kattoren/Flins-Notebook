@@ -26,7 +26,8 @@ function playVoicelineFile(ctx, filePath, text, options = {}) {
   });
   const settings = ctx.dataStore.settings.get();
   const dataUrl = readAudioAsDataUrl(filePath);
-  const volume = getFlinsVoicelinePlayVolume(settings);
+  const gain = options.volumeGain ?? payload.volumeGain ?? 1;
+  const volume = Math.min(1, getFlinsVoicelinePlayVolume(settings) * gain);
   const sprite = options.forceSprite || payload.sprite;
 
   ctx.sendToPetWindow('play-voiceline', {
@@ -45,9 +46,10 @@ function playVoicelinePayload(ctx, voicelinePayload, options = {}) {
     petForm,
     forceSprite: options.forceSprite || null,
   });
-  playVoicelineFile(ctx, voicelinePayload.filePath, voicelinePayload.text, {
+  playVoicelineFile(ctx, voicelinePayload.filePath, options.text ?? voicelinePayload.text, {
     forceSprite: options.forceSprite || resolved.sprite,
     spriteHoldMs: options.spriteHoldMs,
+    volumeGain: options.volumeGain ?? resolved.volumeGain,
   });
 }
 
@@ -60,12 +62,13 @@ function playVoicelineSequence(ctx, voicelinePayloads) {
   const items = voicelinePayloads
     .filter((payload) => payload?.filePath && fs.existsSync(payload.filePath))
     .map((payload) => {
-      const sprite = getVoicelinePayload(payload.filePath, { petForm }).sprite;
+      const resolved = getVoicelinePayload(payload.filePath, { petForm });
+      const gain = resolved.volumeGain ?? 1;
       return {
         dataUrl: readAudioAsDataUrl(payload.filePath),
-        volume,
+        volume: Math.min(1, volume * gain),
         text: payload.text || '',
-        imageSrc: resolvePetImageSrc(sprite),
+        imageSrc: resolvePetImageSrc(resolved.sprite),
       };
     });
 
