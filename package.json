@@ -14,7 +14,7 @@
   "build": {
     "appId": "com.flins.notes",
     "productName": "Flins' Notes",
-    "icon": "assets/flins/flins_idle.png",
+    "icon": "assets/flins/flins_notes.ico",
     "directories": {
       "output": "release"
     },

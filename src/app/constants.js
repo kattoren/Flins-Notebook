@@ -5,6 +5,7 @@ const ASSETS_DIR = path.join(SRC_DIR, '..', 'assets');
 const AUDIO_DIR = path.join(ASSETS_DIR, 'audio');
 const PET_ASSETS_DIR = path.join(ASSETS_DIR, 'flins');
 const PET_IDLE_IMAGE = path.join(PET_ASSETS_DIR, 'flins_idle.png');
+const APP_ICON = path.join(PET_ASSETS_DIR, 'flins_notes.ico');
 
 module.exports = {
   SRC_DIR,
@@ -12,7 +13,8 @@ module.exports = {
   AUDIO_DIR,
   PET_ASSETS_DIR,
   PET_IDLE_IMAGE,
-  PET_ICON_IMAGE: PET_IDLE_IMAGE,
+  APP_ICON,
+  PET_ICON_IMAGE: APP_ICON,
   PET_DEFAULT_FORM: 'gif',
   PET_FORM_ASSETS: {
     gif: 'flins_stand.gif',
