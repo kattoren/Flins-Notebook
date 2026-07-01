@@ -1,18 +1,28 @@
-# Flins Notes
+# Flins' Notes
 
 <img src="assets/ui/Book/Book_close.png" alt="Flins Notes closed book" width="200">
 
 A  Windows desktop reminder app with a book-themed planner and Flins as a desktop pet!
 
-**Book:** 
-- schedule reminders (once, daily, weekdays, weekends, weekly, or custom days) with alarms
-- optional pre-alerts,
-- day/week views, bulk edit
-- simple achievements log
-- adjust alarm and voiceline volume from the book UI
+## **Book:** 
+- schedule reminders with alarms
+    - day/week views,
+- achievements log
+- adjust alarm and voiceline volume
 
-**Flins:**
+
+## **Flins:**
 - drag Flins around your desktop
-- click him for voicelines
-- use the right-click menu to set your name, pin a message, run a simple or Pomodoro timer, and switch styles (animated, lantern, or sticker)
-- Flins announces reminders and pre-alerts in chat bubbles and reacts during alarms
+- click him for up to 19 unique JP voicelines
+- use the right-click menu to access menu to:
+    -  set your name
+    -  pin a sticky message
+    -  set timer
+    -  switch styles (animated, lantern, sticker)
+- Has 2 easter eggs ( ◠‿◠ )
+
+
+## **How to Run:** 
+1. Download the exe [here](https://github.com/kattoren/Flins-Notebook/releases/tag/v0.1.0)
+2. Unblock
+3. Run and note your wins with Flins!
