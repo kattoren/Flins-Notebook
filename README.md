@@ -10,6 +10,7 @@ A  Windows desktop reminder app with a book-themed planner and Flins as a deskto
 - achievements log
 - adjust alarm and voiceline volume
 
+
 **Flins:**
 - drag Flins around your desktop
 - click him for up to 19 unique voicelines
@@ -19,6 +20,7 @@ A  Windows desktop reminder app with a book-themed planner and Flins as a deskto
     -  set timer
     -  switch styles (animated, lantern, sticker)
 - Has 2 easter eggs ( ◠‿◠ )
+
 
 **How to Run:** 
 1. Download the exe
