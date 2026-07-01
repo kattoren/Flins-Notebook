@@ -23,6 +23,6 @@ A  Windows desktop reminder app with a book-themed planner and Flins as a deskto
 
 
 ## **How to Run:** 
-1. Download the exe
+1. Download the exe [here](https://github.com/kattoren/Flins-Notebook/releases/tag/v0.1.0)
 2. Unblock
 3. Run and note your wins with Flins!
