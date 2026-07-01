@@ -3,9 +3,8 @@ function getPetName(settings) {
   return name || 'friend';
 }
 
-function formatReminderSpeech(settings, reminder, timeLabel) {
-  const time = timeLabel || formatTime12From24(reminder.time);
-  return `${getPetName(settings)}, ${reminder.title}, ${time} now!`;
+function formatReminderSpeech(settings, reminder) {
+  return `${getPetName(settings)}, it is time for ${reminder.title} !`;
 }
 
 function formatPreAlertSpeech(settings, reminder, minutes) {

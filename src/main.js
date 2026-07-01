@@ -3,7 +3,7 @@ const { app, Menu } = require('electron');
 const { initDataStore } = require('./store/dataStore');
 const { registerDataIpc } = require('./ipc/dataHandlers');
 const { createAppContext } = require('./app/context');
-const { PET_IDLE_IMAGE } = require('./app/constants');
+const { PET_IDLE_IMAGE, APP_DISPLAY_NAME, APP_USER_MODEL_ID } = require('./app/constants');
 const { initLifecycle } = require('./app/lifecycle');
 const { initMainWindow } = require('./windows/mainWindow');
 const { initPetWindow } = require('./windows/petWindow');
@@ -40,8 +40,9 @@ if (!gotSingleInstanceLock) {
 
   app.whenReady().then(() => {
     try {
+      app.setName(APP_DISPLAY_NAME);
       if (process.platform === 'win32') {
-        app.setAppUserModelId('com.flins.notes');
+        app.setAppUserModelId(APP_USER_MODEL_ID);
       }
 
       const appPath = path.join(__dirname, '..');

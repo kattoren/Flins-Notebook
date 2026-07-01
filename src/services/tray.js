@@ -1,10 +1,11 @@
 const { Menu, Tray } = require('electron');
+const { APP_DISPLAY_NAME } = require('../app/constants');
 const { getAppIcon } = require('../utils/petAssets');
 
 function createTray(ctx) {
   const icon = getAppIcon();
   ctx.tray = new Tray(icon.resize({ width: 16, height: 16 }));
-  ctx.tray.setToolTip('Flins Notes');
+  ctx.tray.setToolTip(APP_DISPLAY_NAME);
 
   const contextMenu = Menu.buildFromTemplate([
     { label: 'Open', click: () => ctx.showMainWindow() },

@@ -5,9 +5,13 @@ const {
   formatPomodoroWorkTitle,
   formatPomodoroBreakTitle,
 } = require('../pet/petSpeak');
-const { getLevelUpLine, pickAchievementLine, pickDailyAffirmation } = require('../../assets/audio/flinsLines');
+const { pickAchievementLine, pickDailyAffirmation } = require('../../assets/audio/flinsLines');
 const { getLevelInfo } = require('../utils/levels');
+const { getReceivingGiftVoiceline } = require('../../assets/audio/voicelines');
 const { sendToWindow } = require('../utils/windowMessaging');
+
+const RECEIVING_GIFT_COOLDOWN_MS = 30000;
+const STICKER_BOW_SPRITE = 'flins_bow.png';
 
 function speakPetMessage(ctx, text, { hops = 1, autoDismissMs = 0 } = {}) {
   if (!ctx.isPetVisible() || !text) return;
@@ -21,6 +25,31 @@ function stopPetAudio(ctx) {
   }
 }
 
+function getReceivingGiftOptions(ctx, { holdSpriteAfter = false } = {}) {
+  if (ctx.getPetForm() !== 'sticker') return {};
+  const options = { forceSprite: STICKER_BOW_SPRITE };
+  if (holdSpriteAfter) {
+    options.spriteHoldMs = 5000;
+  }
+  return options;
+}
+
+function tryPlayReceivingGift(ctx, { skipCooldown = false, holdSpriteAfter = false } = {}) {
+  if (!ctx.isPetVisible()) return false;
+
+  const now = Date.now();
+  if (!skipCooldown && now - ctx.lastReceivingGiftAt < RECEIVING_GIFT_COOLDOWN_MS) {
+    return false;
+  }
+
+  const voiceline = getReceivingGiftVoiceline();
+  if (!voiceline) return false;
+
+  ctx.lastReceivingGiftAt = now;
+  ctx.playVoicelinePayload(voiceline, getReceivingGiftOptions(ctx, { holdSpriteAfter }));
+  return true;
+}
+
 function handleAchievementCreated(ctx, { beforeCount, afterCount }) {
   if (!ctx.dataStore) return;
 
@@ -29,7 +58,11 @@ function handleAchievementCreated(ctx, { beforeCount, afterCount }) {
 
   if (levelAfter > levelBefore) {
     ctx.playLevelUpSfx();
-    speakPetMessage(ctx, getLevelUpLine(levelAfter), { hops: 3, autoDismissMs: 30000 });
+    tryPlayReceivingGift(ctx, { skipCooldown: true });
+    return;
+  }
+
+  if (tryPlayReceivingGift(ctx, { holdSpriteAfter: true })) {
     return;
   }
 
@@ -166,7 +199,7 @@ function showPetContextMenu(ctx) {
   menuItems.push(
     { type: 'separator' },
     {
-      label: 'Pet style',
+      label: 'Flins options',
       submenu: [
         {
           label: 'Flins GIF',
@@ -213,12 +246,12 @@ function showPetContextMenu(ctx) {
     },
     { type: 'separator' },
     {
-      label: 'Open Book',
+      label: 'Open book',
       click: () => ctx.openBookWindow(),
     },
     { type: 'separator' },
     {
-      label: 'Close Book',
+      label: 'Close book',
       click: () => ctx.quitApp(),
     },
   );
@@ -248,12 +281,12 @@ function showSummonedPet(ctx) {
   }
   ctx.petWindow.show();
   ctx.notifyPetVisibility(true);
-  ctx.playGreetingVoiceline();
+  ctx.playOpeningVoiceline();
 }
 
 function summonPet(ctx) {
   if (!ctx.petWindow || ctx.petWindow.isDestroyed()) {
-    ctx.pendingSummonGreeting = true;
+    ctx.pendingSummonOpening = true;
     ctx.createPetWindow();
     return;
   }

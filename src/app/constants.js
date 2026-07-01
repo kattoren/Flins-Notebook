@@ -26,4 +26,6 @@ module.exports = {
   PET_BUBBLE_MAX_HEIGHT: 360,
   PET_BUBBLE_AREA: 32 + 360,
   FLINS_VOICELINE_MAX_VOLUME: 0.25,
+  APP_DISPLAY_NAME: "Flins' Notes",
+  APP_USER_MODEL_ID: 'com.flins.notes',
 };

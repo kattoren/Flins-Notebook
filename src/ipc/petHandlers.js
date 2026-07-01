@@ -113,9 +113,9 @@ function registerPetIpc(ctx) {
       ctx.pushTimerToPet(ctx.getTimerTickPayload());
     }
     ctx.sendPetHop();
-    if (ctx.pendingSummonGreeting) {
-      ctx.pendingSummonGreeting = false;
-      ctx.playGreetingVoiceline();
+    if (ctx.pendingSummonOpening) {
+      ctx.pendingSummonOpening = false;
+      ctx.playOpeningVoiceline();
       return;
     }
     if (!ctx.hasPlayedStartupGreeting) {
@@ -126,25 +126,26 @@ function registerPetIpc(ctx) {
 
   ipcMain.handle('pet:playChatVoiceline', () => {
     const settings = ctx.dataStore.settings.get();
+    const petForm = ctx.getPetForm();
     if (settings.oyaMode) {
-      const oya = getRandomOyaVoiceline();
+      const oya = getRandomOyaVoiceline({ petForm });
       if (oya) {
-        ctx.playVoicelineFile(oya.filePath, oya.text);
+        ctx.playVoicelinePayload(oya);
       }
       return;
     }
 
     if (shouldPlayOyaTriple()) {
-      const triple = getRandomOyaTriple();
+      const triple = getRandomOyaTriple({ petForm });
       if (triple?.length === 3) {
         ctx.playVoicelineSequence(triple);
         return;
       }
     }
 
-    const chat = getRandomChatVoiceline();
+    const chat = getRandomChatVoiceline({ petForm });
     if (chat) {
-      ctx.playVoicelineFile(chat.filePath, chat.text);
+      ctx.playVoicelinePayload(chat);
     }
   });
 
