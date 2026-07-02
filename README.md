@@ -13,13 +13,13 @@ A  Windows desktop reminder app with a book-themed planner and Flins as a deskto
 
 ## **Flins:**
 - drag Flins around your desktop
-- click him for up to 19 unique JP voicelines
+- click him to hear 19 unique JP voicelines
 - use the right-click menu to access menu to:
     -  set your name
     -  pin a sticky message
     -  set timer
-    -  switch styles (animated, lantern, sticker)
-- Has 2 easter eggs ( ◠‿◠ )
+    -  switch styles (animated GIF with eye-cursor tracking, lantern, sticker)
+- 2 easter eggs ( ◠‿◠ )
 
 ## **Credit**
 - UI made in Figma
