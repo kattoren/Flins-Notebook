@@ -1,6 +1,19 @@
 const DRAG_THRESHOLD = 5;
+const FOLLOW_SOURCE_WIDTH = 777;
+const FOLLOW_SOURCE_HEIGHT = 1115;
+const FOLLOW_SOCKET_CENTER = { x: 198 + 375 / 2, y: 499 + 105 / 2 };
+const FOLLOW_MAX_OFFSET = 18;
+const FOLLOW_FALLOFF_START = 40;
+const FOLLOW_FALLOFF_END = 250;
+const FOLLOW_EASE = 0.18;
+const FOLLOW_FACTOR = 0.22;
 
 const img = document.getElementById('flins');
+const flinsFollowStage = document.getElementById('flins-follow-stage');
+const flinsFollowBase = document.getElementById('flins-follow-base');
+const flinsFollowWhite = document.getElementById('flins-follow-white');
+const flinsFollowEyeball = document.getElementById('flins-follow-eyeball');
+const flinsFollowLashes = document.getElementById('flins-follow-lashes');
 const flinsWrap = document.getElementById('flins-wrap');
 const bubblesColumn = document.getElementById('pet-bubbles');
 const bubble = document.getElementById('speech-bubble');
@@ -28,6 +41,18 @@ let timerRunning = false;
 let timerVisible = true;
 let bubbleWidthPx = null;
 let layoutDims = null;
+let followTargetX = 0;
+let followTargetY = 0;
+let followCurX = 0;
+let followCurY = 0;
+const hasFollowRig = Boolean(
+  flinsFollowStage
+  && flinsFollowBase
+  && flinsFollowWhite
+  && flinsFollowEyeball
+  && flinsFollowLashes,
+);
+let followEnabled = hasFollowRig;
 
 const BUBBLE_EXIT_MS = 1500;
 
@@ -37,6 +62,68 @@ function applyBubbleWidth(width) {
   document.documentElement.style.setProperty('--pet-bubble-width', `${width}px`);
   bubblesColumn.style.width = `${width}px`;
   bubblesColumn.style.maxWidth = `${width}px`;
+}
+
+function resolveFollowAsset(fileName) {
+  return new URL(`../../../assets/flins_follow/${fileName}`, window.location.href).href;
+}
+
+function initFollowAssets() {
+  if (!hasFollowRig) return;
+  flinsFollowBase.src = resolveFollowAsset('flins_stand_base.gif');
+  flinsFollowWhite.src = resolveFollowAsset('flins_stand_eye_white.gif');
+  flinsFollowEyeball.src = resolveFollowAsset('flins_stand_eye_ball.gif');
+  flinsFollowLashes.src = resolveFollowAsset('flins_stand_eye_lashes.gif');
+
+  flinsFollowBase.addEventListener('error', () => {
+    followEnabled = false;
+    img.classList.remove('hidden');
+    if (formBaseSrc) img.src = formBaseSrc;
+  }, { once: true });
+}
+
+function setFollowEnabled(enabled) {
+  const useFollow = enabled && followEnabled && hasFollowRig;
+  if (hasFollowRig) {
+    flinsFollowStage.classList.toggle('hidden', !useFollow);
+    flinsFollowStage.setAttribute('aria-hidden', useFollow ? 'false' : 'true');
+  }
+  img.classList.toggle('hidden', useFollow);
+}
+
+function updateFollowTargets(clientX, clientY) {
+  if (!hasFollowRig || !followEnabled) return;
+  const rect = flinsWrap.getBoundingClientRect();
+  if (!rect.width || !rect.height) return;
+  const scaleX = FOLLOW_SOURCE_WIDTH / rect.width;
+  const scaleY = FOLLOW_SOURCE_HEIGHT / rect.height;
+  const mx = (clientX - rect.left) * scaleX;
+  const my = (clientY - rect.top) * scaleY;
+
+  const dx = mx - FOLLOW_SOCKET_CENTER.x;
+  const dy = my - FOLLOW_SOCKET_CENTER.y;
+  const dist = Math.sqrt(dx * dx + dy * dy);
+  const angle = Math.atan2(dy, dx);
+  const t = Math.max(0, Math.min(1, (dist - FOLLOW_FALLOFF_START) / (FOLLOW_FALLOFF_END - FOLLOW_FALLOFF_START)));
+
+  followTargetX = Math.cos(angle) * FOLLOW_MAX_OFFSET * t;
+  followTargetY = Math.sin(angle) * FOLLOW_MAX_OFFSET * t;
+}
+
+function animateFollowEyes() {
+  if (!hasFollowRig || !followEnabled) {
+    requestAnimationFrame(animateFollowEyes);
+    return;
+  }
+  followCurX += (followTargetX - followCurX) * FOLLOW_EASE;
+  followCurY += (followTargetY - followCurY) * FOLLOW_EASE;
+  flinsFollowEyeball.style.transform = `translate(${followCurX}px, ${followCurY}px)`;
+
+  const fx = followCurX * FOLLOW_FACTOR;
+  const fy = followCurY * FOLLOW_FACTOR;
+  flinsFollowWhite.style.transform = `translate(${fx}px, ${fy}px)`;
+  flinsFollowLashes.style.transform = `translate(${fx}px, ${fy}px)`;
+  requestAnimationFrame(animateFollowEyes);
 }
 
 function playHop() {
@@ -78,6 +165,9 @@ function applyFixedSize(dims) {
   flinsWrap.style.height = `${petH}px`;
   img.style.width = `${petW}px`;
   img.style.height = `${petH}px`;
+  if (hasFollowRig) {
+    flinsFollowStage.style.transform = `scale(${petW / FOLLOW_SOURCE_WIDTH}, ${petH / FOLLOW_SOURCE_HEIGHT})`;
+  }
 }
 
 function applyPetForm(form, imageSrc, dims) {
@@ -85,8 +175,10 @@ function applyPetForm(form, imageSrc, dims) {
   formBaseSrc = imageSrc;
   const petRoot = document.getElementById('pet-root');
   const isLantern = form === 'lantern';
+  const isFollowGif = form === 'gif';
   petRoot.classList.toggle('pet-form-lantern', isLantern);
   flinsWrap.classList.toggle('pet-form-lantern', isLantern);
+  setFollowEnabled(isFollowGif);
 
   if (dims) {
     applyFixedSize(dims);
@@ -99,7 +191,12 @@ function applyPetForm(form, imageSrc, dims) {
 }
 
 function setPetSprite(src) {
-  if (src) img.src = src;
+  if (!src) return;
+  if (petForm === 'gif' && followEnabled && hasFollowRig) {
+    flinsFollowBase.src = src;
+    return;
+  }
+  img.src = src;
 }
 
 function resetPetSpriteOnly() {
@@ -352,6 +449,8 @@ function setupAudioListeners() {
 }
 
 async function init() {
+  initFollowAssets();
+  animateFollowEyes();
   setupAudioListeners();
 
   const dims = await window.petApi.getDimensions();
@@ -383,16 +482,17 @@ async function init() {
     hideLevelUpBubble();
   });
 
+  flinsWrap.style.cursor = 'grab';
   window.petApi.notifyReady();
 }
 
-img.addEventListener('mousedown', (e) => {
+flinsWrap.addEventListener('mousedown', (e) => {
   if (e.button !== 0) return;
   e.preventDefault();
   dragging = true;
   moved = false;
   startMouse = { x: e.screenX, y: e.screenY };
-  img.style.cursor = 'grabbing';
+  flinsWrap.style.cursor = 'grabbing';
   flinsWrap.classList.add('pet-dragging');
   window.petApi.dragStart(e.screenX, e.screenY);
 });
@@ -403,6 +503,11 @@ function flushDragMove() {
   window.petApi.dragMove(pendingDragPos.x, pendingDragPos.y);
   pendingDragPos = null;
 }
+
+window.addEventListener('mousemove', (e) => {
+  if (petForm !== 'gif') return;
+  updateFollowTargets(e.clientX, e.clientY);
+});
 
 window.addEventListener('mousemove', (e) => {
   if (!dragging) return;
@@ -420,7 +525,7 @@ window.addEventListener('mouseup', (e) => {
   if (!dragging) return;
   const wasClick = !moved && e.button === 0;
   dragging = false;
-  img.style.cursor = 'grab';
+  flinsWrap.style.cursor = 'grab';
   flinsWrap.classList.remove('pet-dragging');
   if (dragFrame) {
     cancelAnimationFrame(dragFrame);
@@ -435,7 +540,7 @@ window.addEventListener('mouseup', (e) => {
   }
 });
 
-img.addEventListener('contextmenu', (e) => {
+flinsWrap.addEventListener('contextmenu', (e) => {
   e.preventDefault();
   window.petApi.showContextMenu();
 });

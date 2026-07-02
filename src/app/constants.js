@@ -17,7 +17,7 @@ module.exports = {
   PET_ICON_IMAGE: APP_ICON,
   PET_DEFAULT_FORM: 'gif',
   PET_FORM_ASSETS: {
-    gif: 'flins_stand.gif',
+    gif: '../flins_follow/flins_stand_base.gif',
     lantern: 'flins lantern.png',
     sticker: 'flins_idle.png',
   },

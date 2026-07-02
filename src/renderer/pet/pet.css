@@ -38,6 +38,61 @@ body {
   flex-shrink: 0;
 }
 
+.flins-follow-stage {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 777px;
+  height: 1115px;
+  transform-origin: top left;
+  pointer-events: none;
+}
+
+.flins-follow-stage.hidden {
+  display: none;
+}
+
+.flins-follow-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  user-select: none;
+  pointer-events: none;
+}
+
+.flins-follow-eye-mask {
+  position: absolute;
+  top: 510px;
+  left: 198px;
+  width: 375px;
+  height: 135px;
+  overflow: hidden;
+  clip-path: inset(16px 0 0 0);
+  pointer-events: none;
+}
+
+.flins-follow-eyeball {
+  position: absolute;
+  top: 3px;
+  left: 22px;
+  will-change: transform;
+  pointer-events: none;
+}
+
+.flins-follow-white {
+  top: 510px;
+  left: 198px;
+  clip-path: inset(18px 0 0 0);
+  opacity: 0.7;
+  will-change: transform;
+}
+
+.flins-follow-lashes {
+  top: 476px;
+  left: 166px;
+  will-change: transform;
+}
+
 .pet-bubble-layer {
   position: absolute;
   left: 50%;
@@ -98,12 +153,15 @@ body {
   animation: flins-hop 0.42s ease-in-out;
 }
 
+#flins-wrap {
+  cursor: grab;
+}
+
 #flins {
   display: block;
   user-select: none;
   -webkit-user-drag: none;
-  pointer-events: auto;
-  cursor: grab;
+  pointer-events: none;
   object-fit: contain;
 }
 
